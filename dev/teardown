@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+OUTPUTS_FILE="${SCRIPT_DIR}/.ephemeral-host.env"
+
+if [ ! -f "$OUTPUTS_FILE" ]; then
+  echo "ERROR: No .ephemeral-host.env found — nothing to tear down" >&2
+  exit 1
+fi
+
+source "$OUTPUTS_FILE"
+
+echo ":: Destroying server ${SERVER_NAME} (${SERVER_ID})..."
+hcloud server delete "$SERVER_NAME"
+
+echo ":: Cleaning up SSH key..."
+hcloud ssh-key delete "$SSH_KEY_NAME" 2>/dev/null || true
+rm -rf "$SSH_KEY_DIR"
+rm -f "$OUTPUTS_FILE"
+
+echo ":: Done. Server destroyed."

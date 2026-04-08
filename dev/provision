@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# --- Config ---
+SERVER_NAME="${SERVER_NAME:-xmtp-test-$(date +%s)}"
+SERVER_TYPE="${SERVER_TYPE:-cx22}"        # 2 vCPU, 4GB RAM — bump to cx32 if needed
+LOCATION="${LOCATION:-ash}"              # Ashburn, VA. Also: nbg, fsn, hel
+IMAGE="${IMAGE:-ubuntu-25.10}"           # Base image; nixos-anywhere will overwrite it
+SSH_KEY_NAME="${SSH_KEY_NAME:-ci-ephemeral}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# --- Prereqs check ---
+for cmd in hcloud nixos-anywhere ssh-keygen jq; do
+  if ! command -v "$cmd" &>/dev/null; then
+    echo "ERROR: $cmd not found in PATH" >&2
+    exit 1
+  fi
+done
+
+if [ -z "${HCLOUD_TOKEN:-}" ]; then
+  echo "ERROR: HCLOUD_TOKEN not set" >&2
+  exit 1
+fi
+
+# --- SSH key ---
+SSH_KEY_DIR="$(mktemp -d)"
+SSH_KEY_PATH="${SSH_KEY_DIR}/id_ed25519"
+ssh-keygen -t ed25519 -f "$SSH_KEY_PATH" -N "" -q
+SSH_PUB_KEY="$(cat "${SSH_KEY_PATH}.pub")"
+
+echo ":: Generated ephemeral SSH key"
+
+# Upload SSH key to Hetzner (ignore error if name already exists)
+hcloud ssh-key create --name "$SSH_KEY_NAME" --public-key "$SSH_PUB_KEY" 2>/dev/null \
+  || hcloud ssh-key delete "$SSH_KEY_NAME" && hcloud ssh-key create --name "$SSH_KEY_NAME" --public-key "$SSH_PUB_KEY"
+
+# --- Create server ---
+echo ":: Creating server ${SERVER_NAME} (${SERVER_TYPE} in ${LOCATION})..."
+hcloud server create \
+  --name "$SERVER_NAME" \
+  --type "$SERVER_TYPE" \
+  --location "$LOCATION" \
+  --image "$IMAGE" \
+  --ssh-key "$SSH_KEY_NAME" \
+  --output json > "${SSH_KEY_DIR}/server.json"
+
+SERVER_IP="$(jq -r '.server.public_net.ipv4.ip' "${SSH_KEY_DIR}/server.json")"
+SERVER_ID="$(jq -r '.server.id' "${SSH_KEY_DIR}/server.json")"
+
+echo ":: Server created: ${SERVER_NAME} (${SERVER_IP}), id=${SERVER_ID}"
+
+# Wait for SSH to be reachable
+echo ":: Waiting for SSH..."
+for i in $(seq 1 30); do
+  if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i "$SSH_KEY_PATH" root@"$SERVER_IP" true 2>/dev/null; then
+    break
+  fi
+  sleep 2
+done
+
+# --- Prepare NixOS config ---
+cp "$SCRIPT_DIR/configuration.nix" "$CONFIG_DIR/configuration.nix"
+
+# Inject the SSH public key
+sed -i "s|@SSH_PUB_KEY@|${SSH_PUB_KEY}|g" "$CONFIG_DIR/configuration.nix"
+
+# --- Install NixOS via nixos-anywhere ---
+echo ":: Running nixos-anywhere..."
+nixos-anywhere \
+  --flake ".#public-xnet" \
+  --ssh-option "-i${SSH_KEY_PATH}" \
+  --ssh-option "-oStrictHostKeyChecking=no" \
+  root@"$SERVER_IP"
+
+echo ":: NixOS installed. Waiting for reboot..."
+sleep 10
+
+for i in $(seq 1 30); do
+  if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i "$SSH_KEY_PATH" root@"$SERVER_IP" true 2>/dev/null; then
+    break
+  fi
+  sleep 5
+done
+
+# --- Verify ---
+echo ":: Verifying Docker..."
+ssh -o StrictHostKeyChecking=no -i "$SSH_KEY_PATH" root@"$SERVER_IP" "docker info --format '{{.ServerVersion}}'"
+
+# --- Write outputs for CI ---
+OUTPUTS_FILE="${SCRIPT_DIR}/.ephemeral-host.env"
+cat > "$OUTPUTS_FILE" <<EOF
+SERVER_NAME=${SERVER_NAME}
+SERVER_ID=${SERVER_ID}
+SERVER_IP=${SERVER_IP}
+SSH_KEY_PATH=${SSH_KEY_PATH}
+SSH_KEY_DIR=${SSH_KEY_DIR}
+SSH_KEY_NAME=${SSH_KEY_NAME}
+EOF
+
+echo ""
+echo "========================================="
+echo "  Host ready: ${SERVER_IP}"
+echo "  SSH: ssh -i ${SSH_KEY_PATH} root@${SERVER_IP}"
+echo "  Docker: ready"
+echo "  Outputs: ${OUTPUTS_FILE}"
+echo "========================================="
