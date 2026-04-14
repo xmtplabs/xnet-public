@@ -2,17 +2,21 @@
 set -euo pipefail
 
 # --- Config ---
-SERVER_NAME="${SERVER_NAME:-xmtp-test-$(date +%s)}"
-SERVER_TYPE="${SERVER_TYPE:-cx22}"        # 2 vCPU, 4GB RAM — bump to cx32 if needed
-LOCATION="${LOCATION:-ash}"              # Ashburn, VA. Also: nbg, fsn, hel
-IMAGE="${IMAGE:-ubuntu-25.10}"           # Base image; nixos-anywhere will overwrite it
-SSH_KEY_NAME="${SSH_KEY_NAME:-ci-ephemeral}"
+SERVER_NAME="${SERVER_NAME:-xnet-public}"
+SERVER_TYPE="${SERVER_TYPE:-cpx51}"
+LOCATION="${LOCATION:-hil}"
+IMAGE="${IMAGE:-ubuntu-24.04}"
+SSH_KEY_NAME="${SSH_KEY_NAME:-insipx-hetzner}"
+FLOATING_IP_NAME="${FLOATING_IP_NAME:-xmtp-migration-test}"
+SSH_KEY_PATH="${SSH_KEY_PATH:?SSH_KEY_PATH must be set}"
+FLAKE_REF="${FLAKE_REF:-.#public-xnet}"
+CUTOVER_DELAY_MINUTES="${CUTOVER_DELAY_MINUTES:-240}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# --- Prereqs check ---
-for cmd in hcloud nixos-anywhere ssh-keygen jq; do
+# --- Prereqs ---
+for cmd in hcloud nixos-anywhere jq ssh; do
   if ! command -v "$cmd" &>/dev/null; then
-    echo "ERROR: $cmd not found in PATH" >&2
+    echo "ERROR: $cmd not found" >&2
     exit 1
   fi
 done
@@ -22,17 +26,35 @@ if [ -z "${HCLOUD_TOKEN:-}" ]; then
   exit 1
 fi
 
-# --- SSH key ---
-SSH_KEY_DIR="$(mktemp -d)"
-SSH_KEY_PATH="${SSH_KEY_DIR}/id_ed25519"
-ssh-keygen -t ed25519 -f "$SSH_KEY_PATH" -N "" -q
-SSH_PUB_KEY="$(cat "${SSH_KEY_PATH}.pub")"
+if [ ! -f "$SSH_KEY_PATH" ]; then
+  echo "ERROR: SSH key not found at '${SSH_KEY_PATH}'" >&2
+  exit 1
+fi
 
-echo ":: Generated ephemeral SSH key"
+# --- Compute cutover timestamp ---
+NS=1000000000
+NOW_S=$(date -u +%s)
+CUTOVER_S=$(( NOW_S + CUTOVER_DELAY_MINUTES * 60 ))
+CUTOVER_TS=$(( CUTOVER_S * NS ))
+echo ":: Cutover scheduled for:"
+echo "::   UTC: $(date -u -d @${CUTOVER_S} '+%Y-%m-%d %H:%M')"
+echo "::   EST: $(TZ='America/New_York' date -d @${CUTOVER_S} '+%Y-%m-%d %H:%M %Z')"
+echo "::   CST: $(TZ='America/Chicago' date -d @${CUTOVER_S} '+%Y-%m-%d %H:%M %Z')"
+echo "::   PST: $(TZ='America/Los_Angeles' date -d @${CUTOVER_S} '+%Y-%m-%d %H:%M %Z')"
+echo "::   CET: $(TZ='Europe/Berlin' date -d @${CUTOVER_S} '+%Y-%m-%d %H:%M %Z')"
+echo "::   JST: $(TZ='Asia/Tokyo' date -d @${CUTOVER_S} '+%Y-%m-%d %H:%M %Z')"
 
-# Upload SSH key to Hetzner (ignore error if name already exists)
-hcloud ssh-key create --name "$SSH_KEY_NAME" --public-key "$SSH_PUB_KEY" 2>/dev/null \
-  || hcloud ssh-key delete "$SSH_KEY_NAME" && hcloud ssh-key create --name "$SSH_KEY_NAME" --public-key "$SSH_PUB_KEY"
+# --- Get floating IP address ---
+FLOATING_IP=$(hcloud floating-ip describe "$FLOATING_IP_NAME" -o json | jq -r '.ip')
+if [ -z "$FLOATING_IP" ] || [ "$FLOATING_IP" = "null" ]; then
+  echo "ERROR: Could not resolve floating IP '$FLOATING_IP_NAME'" >&2
+  exit 1
+fi
+echo ":: Floating IP: ${FLOATING_IP}"
+
+# --- Teardown previous instance ---
+echo ":: Tearing down previous instance..."
+hcloud server delete "$SERVER_NAME" 2>/dev/null || true
 
 # --- Create server ---
 echo ":: Creating server ${SERVER_NAME} (${SERVER_TYPE} in ${LOCATION})..."
@@ -41,66 +63,74 @@ hcloud server create \
   --type "$SERVER_TYPE" \
   --location "$LOCATION" \
   --image "$IMAGE" \
-  --ssh-key "$SSH_KEY_NAME" \
-  --output json > "${SSH_KEY_DIR}/server.json"
+  --ssh-key "$SSH_KEY_NAME"
 
-SERVER_IP="$(jq -r '.server.public_net.ipv4.ip' "${SSH_KEY_DIR}/server.json")"
-SERVER_ID="$(jq -r '.server.id' "${SSH_KEY_DIR}/server.json")"
+# --- Assign floating IP ---
+echo ":: Assigning floating IP ${FLOATING_IP_NAME} to ${SERVER_NAME}..."
+hcloud floating-ip assign "$FLOATING_IP_NAME" "$SERVER_NAME"
 
-echo ":: Server created: ${SERVER_NAME} (${SERVER_IP}), id=${SERVER_ID}"
-
-# Wait for SSH to be reachable
-echo ":: Waiting for SSH..."
+# --- Wait for SSH (use primary IP) ---
+SERVER_IP=$(hcloud server ip "$SERVER_NAME")
+echo ":: Waiting for SSH on ${SERVER_IP} (primary IP)..."
+echo ":: Clearing old SSH host keys..."
+ssh-keygen -R "$SERVER_IP" 2>/dev/null || true
+ssh-keygen -R "$FLOATING_IP" 2>/dev/null || true
+echo ":: Giving cloud-init 30s to finish..."
+sleep 30
+SSH_READY=false
 for i in $(seq 1 30); do
-  if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i "$SSH_KEY_PATH" root@"$SERVER_IP" true 2>/dev/null; then
-    break
-  fi
-  sleep 2
-done
-
-# --- Prepare NixOS config ---
-cp "$SCRIPT_DIR/configuration.nix" "$CONFIG_DIR/configuration.nix"
-
-# Inject the SSH public key
-sed -i "s|@SSH_PUB_KEY@|${SSH_PUB_KEY}|g" "$CONFIG_DIR/configuration.nix"
-
-# --- Install NixOS via nixos-anywhere ---
-echo ":: Running nixos-anywhere..."
-nixos-anywhere \
-  --flake ".#public-xnet" \
-  --ssh-option "-i${SSH_KEY_PATH}" \
-  --ssh-option "-oStrictHostKeyChecking=no" \
-  root@"$SERVER_IP"
-
-echo ":: NixOS installed. Waiting for reboot..."
-sleep 10
-
-for i in $(seq 1 30); do
-  if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i "$SSH_KEY_PATH" root@"$SERVER_IP" true 2>/dev/null; then
+  if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -o BatchMode=yes \
+    -i "$SSH_KEY_PATH" root@"$SERVER_IP" true 2>/dev/null; then
+    SSH_READY=true
     break
   fi
   sleep 5
 done
 
-# --- Verify ---
-echo ":: Verifying Docker..."
-ssh -o StrictHostKeyChecking=no -i "$SSH_KEY_PATH" root@"$SERVER_IP" "docker info --format '{{.ServerVersion}}'"
+if [ "$SSH_READY" != "true" ]; then
+  echo "ERROR: SSH not ready after 60 seconds" >&2
+  exit 1
+fi
 
-# --- Write outputs for CI ---
-OUTPUTS_FILE="${SCRIPT_DIR}/.ephemeral-host.env"
-cat > "$OUTPUTS_FILE" <<EOF
-SERVER_NAME=${SERVER_NAME}
-SERVER_ID=${SERVER_ID}
-SERVER_IP=${SERVER_IP}
-SSH_KEY_PATH=${SSH_KEY_PATH}
-SSH_KEY_DIR=${SSH_KEY_DIR}
-SSH_KEY_NAME=${SSH_KEY_NAME}
-EOF
+# --- Prepare extra-files ---
+EXTRA_DIR=$(mktemp -d)
+mkdir -p "$EXTRA_DIR/etc/xnet"
+echo "XNET_CUTOVER_TIMESTAMP=${CUTOVER_TS}" > "$EXTRA_DIR/etc/xnet/cutover-env"
+
+# --- Deploy NixOS ---
+LOG_FILE="${LOG_DIR:-./xnet-logs}/provision-$(date +%Y%m%d-%H%M%S).log"
+mkdir -p "$(dirname "$LOG_FILE")"
+echo ":: Deploying NixOS via nixos-anywhere (logging to ${LOG_FILE})..."
+nixos-anywhere \
+  --flake "$FLAKE_REF" \
+  --extra-files "$EXTRA_DIR" \
+  -i "$SSH_KEY_PATH" \
+  --ssh-option "StrictHostKeyChecking=no" \
+  --ssh-option "ServerAliveInterval=60" \
+  --ssh-option "ServerAliveCountMax=20" \
+  --ssh-option "ConnectTimeout=60" \
+  --debug \
+  root@"$SERVER_IP" 2>&1 | tee "$LOG_FILE"
+
+rm -rf "$EXTRA_DIR"
+
+# --- Wait for reboot and services ---
+echo ":: Waiting for xnet to start (using floating IP ${FLOATING_IP})..."
+sleep 15  # give nixos-anywhere reboot time + floating IP to propagate
+for i in $(seq 1 60); do
+  if ssh -o StrictHostKeyChecking=no -o BatchMode=yes -i "$SSH_KEY_PATH" root@"$FLOATING_IP" \
+    "systemctl is-active xnet.service" 2>/dev/null; then
+    echo ":: xnet is running"
+    break
+  fi
+  echo "   waiting... ($i)"
+  sleep 10
+done
 
 echo ""
 echo "========================================="
-echo "  Host ready: ${SERVER_IP}"
-echo "  SSH: ssh -i ${SSH_KEY_PATH} root@${SERVER_IP}"
-echo "  Docker: ready"
-echo "  Outputs: ${OUTPUTS_FILE}"
+echo "  Server:   ${FLOATING_IP}"
+echo "  SSH:      ssh -i ${SSH_KEY_PATH} root@${FLOATING_IP}"
+echo "  Cutover:  $(date -u -d @${CUTOVER_S} '+%Y-%m-%d %H:%M UTC')"
+echo "  Status:   http://migrate.xmtp.run"
 echo "========================================="

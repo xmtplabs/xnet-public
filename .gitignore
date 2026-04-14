@@ -1,1 +1,10 @@
 *.qcow2
+
+result
+result/**
+xnet-logs/**
+*.log
+.direnv
+.direnv/**
+superpowers
+superpowers/**

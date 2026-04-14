@@ -1,22 +1,60 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-OUTPUTS_FILE="${SCRIPT_DIR}/.ephemeral-host.env"
+# --- Config ---
+SERVER_NAME="${SERVER_NAME:-xnet-public}"
+FLOATING_IP_NAME="${FLOATING_IP_NAME:-xmtp-migration-test}"
+SSH_KEY_PATH="${SSH_KEY_PATH:?SSH_KEY_PATH must be set}"
+LOG_DIR="${LOG_DIR:-./xnet-logs}"
+NO_LOGS="${NO_LOGS:-false}"
 
-if [ ! -f "$OUTPUTS_FILE" ]; then
-  echo "ERROR: No .ephemeral-host.env found — nothing to tear down" >&2
+# --- Prereqs ---
+for cmd in hcloud ssh jq; do
+  if ! command -v "$cmd" &>/dev/null; then
+    echo "ERROR: $cmd not found" >&2
+    exit 1
+  fi
+done
+
+if [ -z "${HCLOUD_TOKEN:-}" ]; then
+  echo "ERROR: HCLOUD_TOKEN not set" >&2
   exit 1
 fi
 
-source "$OUTPUTS_FILE"
+# --- Check server exists ---
+if ! hcloud server describe "$SERVER_NAME" &>/dev/null; then
+  echo ":: No server '${SERVER_NAME}' found, nothing to tear down"
+  exit 0
+fi
 
-echo ":: Destroying server ${SERVER_NAME} (${SERVER_ID})..."
+# --- Collect logs (unless --no-logs) ---
+if [ "$NO_LOGS" != "true" ]; then
+  FLOATING_IP=$(hcloud floating-ip describe "$FLOATING_IP_NAME" -o json | jq -r '.ip')
+  if [ -z "$FLOATING_IP" ] || [ "$FLOATING_IP" = "null" ]; then
+    echo ":: WARNING: Could not resolve floating IP, skipping log collection"
+  else
+    SSH="ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i $SSH_KEY_PATH root@$FLOATING_IP"
+
+    echo ":: Collecting logs from ${FLOATING_IP}..."
+    mkdir -p "$LOG_DIR"
+
+    $SSH "journalctl -u xnet -u xnet-cutover --no-pager" > "$LOG_DIR/systemd.log" 2>/dev/null || true
+    $SSH "systemctl status xnet --no-pager" > "$LOG_DIR/xnet-status.log" 2>/dev/null || true
+    $SSH "systemctl status xnet-cutover --no-pager" > "$LOG_DIR/cutover-status.log" 2>/dev/null || true
+    $SSH "docker ps -a" > "$LOG_DIR/docker-ps.log" 2>/dev/null || true
+
+    for c in $($SSH "docker ps -a --format '{{.Names}}' | grep xnet" 2>/dev/null); do
+      $SSH "docker logs $c" > "$LOG_DIR/$c.log" 2>&1 || true
+    done
+
+    echo ":: Logs saved to ${LOG_DIR}/"
+  fi
+else
+  echo ":: Skipping log collection (NO_LOGS=true)"
+fi
+
+# --- Destroy server ---
+echo ":: Destroying server ${SERVER_NAME}..."
 hcloud server delete "$SERVER_NAME"
 
-echo ":: Cleaning up SSH key..."
-hcloud ssh-key delete "$SSH_KEY_NAME" 2>/dev/null || true
-rm -rf "$SSH_KEY_DIR"
-rm -f "$OUTPUTS_FILE"
-
-echo ":: Done. Server destroyed."
+echo ":: Done."
