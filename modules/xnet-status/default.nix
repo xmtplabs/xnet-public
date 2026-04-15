@@ -262,7 +262,7 @@ in
 
     # Route domains to services via Traefik
     services.xnet.settings.extraTraefikRoutes = [
-      { name = "status-page"; rule = "Host(`${cfg.domain}`)"; url = "http://xnet-status:8899"; priority = 100; }
+      { name = "status-page"; rule = "Host(`${cfg.domain}`)"; url = "http://xnet-status:8899"; priority = 100; tls = true; }
       { name = "status-page-fallback"; rule = "PathPrefix(`/`)"; url = "http://xnet-status:8899"; priority = 1; }
       { name = "grafana"; rule = "Host(`grafana.xmtp.run`)"; url = "http://xnet-grafana:3000"; priority = null; }
       { name = "prometheus"; rule = "Host(`prometheus.xmtp.run`)"; url = "http://xnet-prometheus:9090"; priority = null; }

@@ -90,6 +90,11 @@ let
     }
     // lib.optionalAttrs (cfg.settings.traefik.https_port != null) {
       https_port = cfg.settings.traefik.https_port;
+    }
+    // lib.optionalAttrs cfg.settings.traefik.acme.enable {
+      acme = {
+        inherit (cfg.settings.traefik.acme) email storage;
+      };
     };
 
     toxiproxy = {
@@ -120,7 +125,9 @@ let
   // lib.optionalAttrs (cfg.settings.extraTraefikRoutes != [ ]) {
     extra_traefik_routes = map (
       r:
-      { inherit (r) name rule url; } // lib.optionalAttrs (r.priority != null) { inherit (r) priority; }
+      { inherit (r) name rule url; }
+      // lib.optionalAttrs (r.priority != null) { inherit (r) priority; }
+      // lib.optionalAttrs r.tls { tls = true; }
     ) cfg.settings.extraTraefikRoutes;
   };
 
@@ -208,6 +215,23 @@ in
           type = lib.types.nullOr lib.types.port;
           default = null;
           description = "Override the Traefik HTTPS host port (default: 443)";
+        };
+        acme = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = "Enable Let's Encrypt ACME for TLS certificates";
+          };
+          email = lib.mkOption {
+            type = lib.types.str;
+            default = "ops@xmtp.com";
+            description = "ACME account email";
+          };
+          storage = lib.mkOption {
+            type = lib.types.str;
+            default = "/tmp/xnet/traefik/acme.json";
+            description = "Path for ACME certificate storage";
+          };
         };
       };
 
@@ -340,6 +364,11 @@ in
               priority = lib.mkOption {
                 type = lib.types.nullOr lib.types.int;
                 default = null;
+              };
+              tls = lib.mkOption {
+                type = lib.types.bool;
+                default = false;
+                description = "Enable TLS via ACME for this route";
               };
             };
           }

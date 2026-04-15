@@ -34,7 +34,8 @@
             services.xnet = {
               enable = true;
               settings = {
-                traefik.https_port = 8443;
+                traefik.https_port = 443;
+                traefik.acme.enable = true;
                 paused = true;
                 xmtpd = {
                   version = "v1.3.0";
@@ -72,10 +73,10 @@
             modules = common ++ [
               ./disks.nix
               (
-                { pkgs, ... }:
+                { pkgs, config, ... }:
                 {
                   services.xnet.settings.remote_domain = "xmtp.run";
-                  services.xnet-status.serverIp = "5.161.27.26";
+                  services.xnet-status.serverIp = "5.78.25.67";
                   # Add floating IP as an alias without disrupting DHCP
                   systemd.services.floating-ip = {
                     description = "Configure Hetzner floating IP";
@@ -92,11 +93,11 @@
                     };
                     script = ''
                       DEV=$(ip route show default | awk '{print $5; exit}')
-                      ip addr add 5.161.27.26/32 dev "$DEV"
+                      ip addr add ${config.services.xnet-status.serverIp}/32 dev "$DEV"
                     '';
                     preStop = ''
                       DEV=$(ip route show default | awk '{print $5; exit}')
-                      ip addr del 5.161.27.26/32 dev "$DEV"
+                      ip addr del ${config.services.xnet-status.serverIp}/32 dev "$DEV"
                     '';
                   };
                 }
