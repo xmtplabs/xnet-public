@@ -16,23 +16,24 @@ let
       echo "No /etc/xnet/cutover-env found, skipping cutover"
       exit 0
     fi
-    source /etc/xnet/cutover-env
+    # Parse cutover-env safely without sourcing (avoids command injection)
+    XNET_CUTOVER_TIMESTAMP=$(grep -E '^XNET_CUTOVER_TIMESTAMP=' /etc/xnet/cutover-env | head -1 | cut -d= -f2)
     if [ -z "''${XNET_CUTOVER_TIMESTAMP:-}" ]; then
       echo "XNET_CUTOVER_TIMESTAMP not set, skipping cutover"
       exit 0
     fi
 
     NS=1000000000
-    TS_S=$((XNET_CUTOVER_TIMESTAMP / NS))
+    TS_S=$(("$XNET_CUTOVER_TIMESTAMP" / NS))
 
-    ${cfg.package}/bin/xnet-cli migrate -c $XNET_CUTOVER_TIMESTAMP -vvv
+    ${cfg.package}/bin/xnet-cli migrate -c "$XNET_CUTOVER_TIMESTAMP" -vvv
     echo ":: Cutover scheduled for:"
     echo "::   UTC: $(date -u -d @$TS_S '+%Y-%m-%d %H:%M')"
-    echo "::   EST: $(TZ='America/New_York' date -d @$TS_S '+%Y-%m-%d %H:%M %Z')"
-    echo "::   CST: $(TZ='America/Chicago' date -d @$TS_S '+%Y-%m-%d %H:%M %Z')"
-    echo "::   PST: $(TZ='America/Los_Angeles' date -d @$TS_S '+%Y-%m-%d %H:%M %Z')"
-    echo "::   CET: $(TZ='Europe/Berlin' date -d @$TS_S '+%Y-%m-%d %H:%M %Z')"
-    echo "::   JST: $(TZ='Asia/Tokyo' date -d @$TS_S '+%Y-%m-%d %H:%M %Z')"
+    echo "::   EST: $(TZ='America/New_York' date -d "@$TS_S" '+%Y-%m-%d %H:%M %Z')"
+    echo "::   CST: $(TZ='America/Chicago' date -d "@$TS_S" '+%Y-%m-%d %H:%M %Z')"
+    echo "::   PST: $(TZ='America/Los_Angeles' date -d "@$TS_S" '+%Y-%m-%d %H:%M %Z')"
+    echo "::   CET: $(TZ='Europe/Berlin' date -d "@$TS_S" '+%Y-%m-%d %H:%M %Z')"
+    echo "::   JST: $(TZ='Asia/Tokyo' date -d "@$TS_S" '+%Y-%m-%d %H:%M %Z')"
 
     NOW=$(date +%s%N)
     DELAY_NS=$((XNET_CUTOVER_TIMESTAMP - NOW))

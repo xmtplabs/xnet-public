@@ -168,6 +168,12 @@ in
       script = let
         caddyfile = pkgs.writeText "status-Caddyfile" ''
           :8899 {
+            header {
+              X-Content-Type-Options nosniff
+              X-Frame-Options DENY
+              X-XSS-Protection "1; mode=block"
+              Referrer-Policy strict-origin-when-cross-origin
+            }
             handle /api/health {
               root * /tmp/xnet
               rewrite * /health.json

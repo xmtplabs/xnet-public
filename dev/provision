@@ -94,6 +94,7 @@ fi
 
 # --- Prepare extra-files ---
 EXTRA_DIR=$(mktemp -d)
+trap 'rm -rf "$EXTRA_DIR"' EXIT
 mkdir -p "$EXTRA_DIR/etc/xnet"
 echo "XNET_CUTOVER_TIMESTAMP=${CUTOVER_TS}" > "$EXTRA_DIR/etc/xnet/cutover-env"
 
@@ -111,8 +112,6 @@ nixos-anywhere \
   --ssh-option "ConnectTimeout=60" \
   --debug \
   root@"$SERVER_IP" 2>&1 | tee "$LOG_FILE"
-
-rm -rf "$EXTRA_DIR"
 
 # --- Wait for reboot and services ---
 echo ":: Waiting for xnet to start (using floating IP ${FLOATING_IP})..."

@@ -244,11 +244,15 @@
     if (!el) return;
     if (!migrationData || !migrationData.has_data) {
       el.style.display = 'block';
-      el.innerHTML = '<div style="color:#555;font-size:11px;text-align:center;">Waiting for migration metrics...</div>';
+      el.textContent = '';
+      var waitDiv = document.createElement('div');
+      waitDiv.style.cssText = 'color:#555;font-size:11px;text-align:center;';
+      waitDiv.textContent = 'Waiting for migration metrics...';
+      el.appendChild(waitDiv);
       return;
     }
     el.style.display = 'block';
-    var html = '';
+    el.textContent = '';
     var tables = migrationData.tables.sort(function(a, b) { return a.table.localeCompare(b.table); });
     for (var i = 0; i < tables.length; i++) {
       var t = tables[i];
@@ -257,13 +261,23 @@
       var empty = 20 - filled;
       var bar = '\u2588'.repeat(filled) + '\u2591'.repeat(empty);
       var color = pct >= 100 ? '#0f0' : pct >= 50 ? '#ff0' : '#f66';
-      html += '<div style="font-size:11px;margin:3px 0;font-family:monospace;">';
-      html += '  <span style="color:#aaa;display:inline-block;min-width:160px;">' + t.table + '</span>';
-      html += '  <span style="color:' + color + ';">[' + bar + ']</span>';
-      html += '  <span style="color:' + color + ';margin-left:6px;">' + pct + '%</span>';
-      html += '</div>';
+      var row = document.createElement('div');
+      row.style.cssText = 'font-size:11px;margin:3px 0;font-family:monospace;';
+      var nameSpan = document.createElement('span');
+      nameSpan.style.cssText = 'color:#aaa;display:inline-block;min-width:160px;';
+      nameSpan.textContent = t.table;
+      var barSpan = document.createElement('span');
+      barSpan.style.color = color;
+      barSpan.textContent = '[' + bar + ']';
+      var pctSpan = document.createElement('span');
+      pctSpan.style.cssText = 'color:' + color + ';margin-left:6px;';
+      pctSpan.textContent = pct + '%';
+      row.appendChild(nameSpan);
+      row.appendChild(document.createTextNode('  '));
+      row.appendChild(barSpan);
+      row.appendChild(pctSpan);
+      el.appendChild(row);
     }
-    el.innerHTML = html;
   }
 
   function hideMigrationDisplay() {

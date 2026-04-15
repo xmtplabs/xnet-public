@@ -11,6 +11,9 @@ on:
     - cron: "55 3 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 env:
   HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
   SERVER_NAME: xnet-public

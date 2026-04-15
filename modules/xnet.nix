@@ -418,11 +418,9 @@ in
       5556 # node go
       8100 # node go http
       5558 # history server
-      8545 # anvil
       50051 # mls validation
-      9090 # prometheus
-      5100 # otterscan
-      3000 # grafana
+      # 8545 (anvil), 9090 (prometheus), 3000 (grafana), 5100 (otterscan)
+      # accessed via Traefik hostname routing (*.xmtp.run) or SSH tunnel
     ]
     ++ lib.optionals cfg.settings.enableDebugPorts [
       8474 # toxiproxy
