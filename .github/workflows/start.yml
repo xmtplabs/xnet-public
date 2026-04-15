@@ -17,7 +17,7 @@ permissions:
 env:
   HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
   SERVER_NAME: xnet-public
-  FLOATING_IP_NAME: xmtp-migration-test
+  FLOATING_IP_NAME: xmtp-migration-test-west
   SSH_KEY_NAME: insipx-hetzner
 
 jobs:
