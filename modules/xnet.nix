@@ -125,7 +125,9 @@ let
   // lib.optionalAttrs (cfg.settings.extraTraefikRoutes != [ ]) {
     extra_traefik_routes = map (
       r:
-      { inherit (r) name rule url; }
+      {
+        inherit (r) name rule url;
+      }
       // lib.optionalAttrs (r.priority != null) { inherit (r) priority; }
       // lib.optionalAttrs r.tls { tls = true; }
     ) cfg.settings.extraTraefikRoutes;
@@ -419,6 +421,7 @@ in
       8100 # node go http
       5558 # history server
       50051 # mls validation
+      8545 # Anvil
       # 8545 (anvil), 9090 (prometheus), 3000 (grafana), 5100 (otterscan)
       # accessed via Traefik hostname routing (*.xmtp.run) or SSH tunnel
     ]
