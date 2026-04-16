@@ -66,6 +66,7 @@
     foundry-bin
     fishPlugins.grc
     fishPlugins.done
+    grc
   ];
 
   programs.fish = {
