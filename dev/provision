@@ -97,6 +97,9 @@ EXTRA_DIR=$(mktemp -d)
 trap 'rm -rf "$EXTRA_DIR"' EXIT
 mkdir -p "$EXTRA_DIR/etc/xnet"
 echo "XNET_CUTOVER_TIMESTAMP=${CUTOVER_TS}" > "$EXTRA_DIR/etc/xnet/cutover-env"
+if [ -n "${SLACK_WEBHOOK_URL:-}" ]; then
+  echo "SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}" >> "$EXTRA_DIR/etc/xnet/cutover-env"
+fi
 
 # --- Deploy NixOS ---
 LOG_FILE="${LOG_DIR:-./xnet-logs}/provision-$(date +%Y%m%d-%H%M%S).log"

@@ -24,14 +24,25 @@
   }
 
   var migrationData = null;
-  var migrationComplete = false;
+
+  function isMigrationComplete() {
+    // Before cutover time, migration hasn't started
+    if (cutoverTs && Math.floor(Date.now() / 1000) < cutoverTs) return true;
+    // No migration data yet — still waiting for metrics to appear
+    if (!migrationData) return false;
+    // Has data and all complete
+    if (migrationData.has_data && migrationData.all_complete) return true;
+    // No data from prometheus but we're past cutover — still waiting
+    if (!migrationData.has_data) return false;
+    return false;
+  }
 
   function computePhase(nowS) {
     if (!cutoverTs) return { phase: 'UNKNOWN', target: null, label: 'timestamp unavailable' };
     var teardownTs = cutoverTs + 4 * 3600;
     if (nowS < cutoverTs) {
       return { phase: 'AWAITING CUTOVER', target: cutoverTs, label: 'until v3 \u2192 d14n cutover' };
-    } else if (!migrationComplete) {
+    } else if (!isMigrationComplete()) {
       return { phase: 'MIGRATING', target: null, label: 'migrating v3 data to d14n...' };
     } else if (nowS < teardownTs) {
       return { phase: 'D14N ACTIVE', target: teardownTs, label: 'until teardown' };
@@ -230,10 +241,6 @@
       var resp = await fetch('/api/migration');
       if (!resp.ok) return;
       migrationData = await resp.json();
-      // Complete if: all tables at 100%, OR no source data exists (nothing to migrate)
-      if (migrationData.all_complete || !migrationData.has_data) {
-        migrationComplete = true;
-      }
     } catch (e) {
       // migration endpoint not available yet
     }

@@ -16,6 +16,7 @@ permissions:
 
 env:
   HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
   SERVER_NAME: xnet-public
   FLOATING_IP_NAME: xmtp-migration-test-west
   SSH_KEY_NAME: insipx-hetzner
