@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XNET Migration Schedule</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #111318;
+    color: #d0d4dc;
+    padding: 32px;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #191c24;
+    border-radius: 16px;
+    padding: 36px 40px 28px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #e8eaf0;
+    letter-spacing: -0.3px;
+    margin-bottom: 4px;
+  }
+
+  .header .subtitle {
+    font-size: 13px;
+    color: #6b7085;
+    font-weight: 500;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead th {
+    text-align: left;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.03);
+    color: #7f8499;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  thead th:first-child { border-radius: 8px 0 0 0; }
+  thead th:last-child { border-radius: 0 8px 0 0; }
+
+  tbody td {
+    padding: 11px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.035);
+    color: #b0b5c3;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  .cycle-sep td {
+    border-top: 2px solid rgba(255,255,255,0.06);
+    padding-top: 13px;
+  }
+
+  .event {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  .event .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dot-start { background: #5b8dd9; }
+  .dot-v3 { background: #5daa8f; }
+  .dot-cutover { background: #c9965a; }
+  .dot-migration { background: #9882c4; }
+  .dot-teardown { background: #c47272; }
+
+  .cutover-row td {
+    background: rgba(180,140,70,0.06);
+  }
+
+  sup {
+    font-size: 9px;
+    color: #5a5e73;
+    margin-left: 1px;
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    font-size: 12px;
+    color: #50546a;
+  }
+
+  .footer a {
+    color: #7b86a8;
+    text-decoration: none;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>XNET Migration &mdash; 24-Hour Schedule</h1>
+    <p class="subtitle">3 cycles / day &middot; 8 hours each &middot; Cutover at +4h into each cycle &middot; Cycles start at 11 PM / 7 AM / 3 PM EST</p>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Event</th>
+        <th>EST</th>
+        <th>PST</th>
+        <th>MST</th>
+        <th>CEST</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Cycle 1 -->
+      <tr>
+        <td><span class="event"><span class="dot dot-start"></span>Cycle 1 &mdash; Start</span></td>
+        <td><strong>11:00 PM</strong><sup>-1</sup></td>
+        <td>8:00 PM<sup>-1</sup></td>
+        <td>9:00 PM<sup>-1</sup></td>
+        <td>5:00 AM</td>
+      </tr>
+      <tr>
+        <td><span class="event"><span class="dot dot-v3"></span>V3 Live</span></td>
+        <td>11:15 PM<sup>-1</sup></td>
+        <td>8:15 PM<sup>-1</sup></td>
+        <td>9:15 PM<sup>-1</sup></td>
+        <td>5:15 AM</td>
+      </tr>
+      <tr class="cutover-row">
+        <td><span class="event"><span class="dot dot-cutover"></span>Cutover / Migration</span></td>
+        <td><strong>3:00 AM</strong></td>
+        <td>12:00 AM</td>
+        <td>1:00 AM</td>
+        <td><strong>9:00 AM</strong></td>
+      </tr>
+      <tr>
+        <td><span class="event"><span class="dot dot-teardown"></span>Teardown</span></td>
+        <td>6:55 AM</td>
+        <td>3:55 AM</td>
+        <td>4:55 AM</td>
+        <td>12:55 PM</td>
+      </tr>
+
+      <!-- Cycle 2 -->
+      <tr class="cycle-sep">
+        <td><span class="event"><span class="dot dot-start"></span>Cycle 2 &mdash; Start</span></td>
+        <td><strong>7:00 AM</strong></td>
+        <td>4:00 AM</td>
+        <td>5:00 AM</td>
+        <td>1:00 PM</td>
+      </tr>
+      <tr>
+        <td><span class="event"><span class="dot dot-v3"></span>V3 Live</span></td>
+        <td>7:15 AM</td>
+        <td>4:15 AM</td>
+        <td>5:15 AM</td>
+        <td>1:15 PM</td>
+      </tr>
+      <tr class="cutover-row">
+        <td><span class="event"><span class="dot dot-cutover"></span>Cutover / Migration</span></td>
+        <td><strong>11:00 AM</strong></td>
+        <td><strong>8:00 AM</strong></td>
+        <td><strong>9:00 AM</strong></td>
+        <td><strong>5:00 PM</strong></td>
+      </tr>
+      <tr>
+        <td><span class="event"><span class="dot dot-teardown"></span>Teardown</span></td>
+        <td>2:55 PM</td>
+        <td>11:55 AM</td>
+        <td>12:55 PM</td>
+        <td>8:55 PM</td>
+      </tr>
+
+      <!-- Cycle 3 -->
+      <tr class="cycle-sep">
+        <td><span class="event"><span class="dot dot-start"></span>Cycle 3 &mdash; Start</span></td>
+        <td><strong>3:00 PM</strong></td>
+        <td>12:00 PM</td>
+        <td>1:00 PM</td>
+        <td>9:00 PM</td>
+      </tr>
+      <tr>
+        <td><span class="event"><span class="dot dot-v3"></span>V3 Live</span></td>
+        <td>3:15 PM</td>
+        <td>12:15 PM</td>
+        <td>1:15 PM</td>
+        <td>9:15 PM</td>
+      </tr>
+      <tr class="cutover-row">
+        <td><span class="event"><span class="dot dot-cutover"></span>Cutover / Migration</span></td>
+        <td><strong>7:00 PM</strong></td>
+        <td><strong>4:00 PM</strong></td>
+        <td><strong>5:00 PM</strong></td>
+        <td>1:00 AM<sup>+1</sup></td>
+      </tr>
+      <tr>
+        <td><span class="event"><span class="dot dot-teardown"></span>Teardown</span></td>
+        <td>10:55 PM</td>
+        <td>7:55 PM</td>
+        <td>8:55 PM</td>
+        <td>4:55 AM<sup>+1</sup></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <sup>-1</sup> previous day &nbsp;&middot;&nbsp; <sup>+1</sup> next day &nbsp;&nbsp;|&nbsp;&nbsp; Live status: <a href="#">migrate.xmtp.run</a>
+  </div>
+</div>
+</body>
+</html>

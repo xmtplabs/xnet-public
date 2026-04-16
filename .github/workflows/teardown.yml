@@ -1,14 +1,14 @@
 name: xnet-teardown
 
 # corresponds to
-# 7:55AM EST / 4:55AM PST
-# 3:55PM EST / 12:55PM PST
-# 11:55PM EST / 8:55PM PST
+# 6:55AM EST / 3:55AM PST
+# 2:55PM EST / 11:55AM PST
+# 10:55PM EST / 7:55PM PST
 on:
   schedule:
-    - cron: "55 11 * * *"
-    - cron: "55 19 * * *"
-    - cron: "55 3 * * *"
+    - cron: "55 10 * * *"
+    - cron: "55 18 * * *"
+    - cron: "55 2 * * *"
   workflow_dispatch:
 
 permissions:

@@ -1,14 +1,14 @@
 name: xnet-start
 
 # corresponds to
-# 12:00AM EST / 9pm PST
-# 8AM EST / 5AM PST
-# 4PM EST / 1PM PST
+# 11:00PM EST / 8PM PST
+# 7AM EST / 4AM PST
+# 3PM EST / 12PM PST
 on:
   schedule:
-    - cron: "0 4 * * *"
-    - cron: "0 12 * * *"
-    - cron: "0 20 * * *"
+    - cron: "0 3 * * *"
+    - cron: "0 11 * * *"
+    - cron: "0 19 * * *"
   workflow_dispatch:
 
 permissions:
