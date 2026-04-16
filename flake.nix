@@ -5,6 +5,7 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    foundry.url = "github:shazow/foundry.nix/stable";
     libxmtp.url = "github:xmtp/libxmtp/insipx/service-toggles";
     flake-parts.url = "github:hercules-ci/flake-parts";
   };
@@ -30,6 +31,7 @@
           (_: {
             nixpkgs.overlays = [
               libxmtp.overlays.default
+              inputs.foundry.overlay
             ];
             services.xnet = {
               enable = true;

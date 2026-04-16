@@ -54,6 +54,14 @@
     toxiproxy
     ghostty.terminfo
     htop
+    foundry-bin
   ];
+
+  programs.fish = {
+    enable = true;
+    interactiveShellInit = ''
+      fish_vi_key_bindings
+    '';
+  };
   system.stateVersion = "25.11";
 }
