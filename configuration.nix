@@ -53,7 +53,7 @@
       "input"
       "docker"
     ];
-    users.defaultUserShell = pkgs.fish;
+    shell = pkgs.fish;
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILUArrr4oix6p/bSjeuXKi2crVzsuSqSYoz//YJMsTlo cardno:14_836_775"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJXIgq273dJuJYSshYwk96GL/W3u1elMWPDZHVYXY+Jg andrew@xmtp.com"

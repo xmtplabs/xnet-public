@@ -50,3 +50,10 @@ jobs:
         run: |
           chmod +x ./dev/provision
           SSH_KEY_PATH=~/.ssh/xnet ./dev/provision
+
+      - name: Notify Slack on failure
+        if: failure()
+        run: |
+          curl -s -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\":x: xnet-start workflow failed\\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+            "$SLACK_WEBHOOK_URL" || true

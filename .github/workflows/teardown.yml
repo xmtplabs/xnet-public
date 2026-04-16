@@ -16,6 +16,7 @@ permissions:
 
 env:
   HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
   SERVER_NAME: xnet-public
   FLOATING_IP_NAME: xmtp-migration-test
 
@@ -51,3 +52,10 @@ jobs:
           name: xnet-logs-${{ github.run_id }}
           path: logs/
           retention-days: 7
+
+      - name: Notify Slack on failure
+        if: failure()
+        run: |
+          curl -s -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\":x: xnet-teardown workflow failed\\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+            "$SLACK_WEBHOOK_URL" || true
