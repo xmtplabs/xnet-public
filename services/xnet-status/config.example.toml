@@ -1,0 +1,12 @@
+[status]
+listen = "0.0.0.0:8899"
+prometheus_url = "http://localhost:9090"
+docker_socket = "/var/run/docker.sock"
+cutover_env_path = "/etc/xnet/cutover-env"
+
+[status.server]
+ip = "5.78.25.67"
+domain = "xmtp.run"
+region = "hil (Hillsboro, OR)"
+server_type = "cpx51"
+use_tls = true

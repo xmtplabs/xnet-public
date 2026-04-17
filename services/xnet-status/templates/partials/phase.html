@@ -1,0 +1,19 @@
+<div class="phase-label">current phase</div>
+<div class="phase-value">&#9608; {{ phase_label }} &#9608;</div>
+<div class="countdown">{{ countdown_text }}</div>
+<div class="countdown-label">{{ phase_description }}</div>
+{% if show_migration %}
+<div id="migration-progress" style="margin-top:12px;text-align:left;padding:0 8px;">
+  {% if has_migration_data %}
+    {% for table in migration_tables %}
+    <div style="font-size:11px;margin:3px 0;font-family:monospace;">
+      <span style="color:#aaa;display:inline-block;min-width:160px;">{{ table.name }}</span>
+      <span style="color:{{ table.color }};">{{ table.bar }}</span>
+      <span style="color:{{ table.color }};margin-left:6px;">{{ table.percent }}%</span>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div style="color:#555;font-size:11px;text-align:center;">Waiting for migration metrics...</div>
+  {% endif %}
+</div>
+{% endif %}

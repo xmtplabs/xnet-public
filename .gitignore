@@ -8,3 +8,8 @@ xnet-logs/**
 .direnv/**
 superpowers
 superpowers/**
+.tls-cache
+.tls-cache/**
+target
+target/**
+**/target/**

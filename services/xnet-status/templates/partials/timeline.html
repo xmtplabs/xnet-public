@@ -1,0 +1,11 @@
+<div class="section-title">&#9472;&#9472; lifecycle timeline &#9472;&#9472;</div>
+<div class="timeline-bar">
+  <div class="timeline-fill" style="width:{{ timeline_pct }}%;"></div>
+</div>
+<div class="timeline-labels">
+  <span{% if pct >= 0.0 %} class="active"{% endif %}>PROVISION</span>
+  <span{% if pct >= 10.0 %} class="active"{% endif %}>V3 RUNNING</span>
+  <span{% if pct >= 50.0 %} class="active"{% endif %}>CUTOVER</span>
+  <span{% if pct >= 55.0 %} class="active"{% endif %}>D14N ACTIVE</span>
+  <span{% if pct >= 95.0 %} class="active"{% endif %}>TEARDOWN</span>
+</div>

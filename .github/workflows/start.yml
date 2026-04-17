@@ -17,6 +17,7 @@ permissions:
 env:
   HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
   SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
   SERVER_NAME: xnet-public
   FLOATING_IP_NAME: xmtp-migration-test-west
   SSH_KEY_NAME: insipx-hetzner

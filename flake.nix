@@ -37,7 +37,7 @@
               enable = true;
               settings = {
                 traefik.https_port = 443;
-                traefik.acme.enable = true;
+                useTls = true;
                 paused = true;
                 xmtpd = {
                   version = "v1.3.0";
@@ -182,11 +182,18 @@
           { pkgs, ... }:
           {
             packages.vm = self.nixosConfigurations.public-xnet-vm.config.system.build.vm;
+            packages.xnet-status = pkgs.rustPlatform.buildRustPackage {
+              pname = "xnet-status";
+              version = "0.1.0";
+              src = ./services/xnet-status;
+              cargoLock.lockFile = ./services/xnet-status/Cargo.lock;
+            };
             devShells.default = pkgs.mkShell {
               nativeBuildInputs = with pkgs; [
                 nixos-anywhere
                 jq
                 hcloud
+                cargo
               ];
             };
           };

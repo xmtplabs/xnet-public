@@ -190,11 +190,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1776280104,
-        "narHash": "sha256-6IV/j4MuywUD9DBdzg0q/sbc+8QxrBLlSisDDKUJJfI=",
+        "lastModified": 1776440702,
+        "narHash": "sha256-1+datLrmpbcHGqEZDfFSNg8aUPQdVIIx/0bNfNi4ZL0=",
         "owner": "xmtp",
         "repo": "libxmtp",
-        "rev": "ee96dae004de0841e9988e188966c0730b17e5ec",
+        "rev": "924eab494a6ee08f668dc98021177e981aa023b2",
         "type": "github"
       },
       "original": {

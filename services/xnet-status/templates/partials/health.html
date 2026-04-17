@@ -1,0 +1,16 @@
+<div class="section-title">&#9472;&#9472; service health &#9472;&#9472;</div>
+{% for svc in services %}
+<div class="service-row">
+  <span class="service-name">{{ svc.display_name }}</span>
+  <span class="service-port">{{ svc.port }}</span>
+  <span class="service-status">
+    {% if svc.up %}
+    <span class="dot up"></span>
+    <span class="status-text up">UP</span>
+    {% else %}
+    <span class="dot down"></span>
+    <span class="status-text down">{{ svc.state_text }}</span>
+    {% endif %}
+  </span>
+</div>
+{% endfor %}

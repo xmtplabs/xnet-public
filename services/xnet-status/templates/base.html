@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XNET Status Board</title>
+<style>{{ css }}</style>
+<script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+<div class="scanlines"></div>
+<div class="container">
+
+  <div class="header">
+    <div class="header-bar">&#9608;&#9608; XNET STATUS BOARD &#9608;&#9608;</div>
+    <div class="logo-area">
+      <img src="data:image/png;base64,{{ logo_base64 }}" alt="xnet logo">
+      <div>
+        <div class="title">XNET</div>
+        <div class="subtitle-text">ephemeral xmtp network</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="marquee-bar">
+    <marquee behavior="scroll" direction="left" scrollamount="2">
+      &#9733; XNET &#9733; ephemeral v3 &#x2192; d14n testbed &#9733; resets every 8h &#9733;
+    </marquee>
+  </div>
+
+  <div class="blurb">
+    Ephemeral <span>XMTP</span> network testing the <span>v3 &#x2192; d14n</span> migration.
+    Deploys, runs cutover, then tears down and repeats.
+  </div>
+
+  <div class="phase-block" hx-get="/htmx/phase" hx-trigger="every 1s" hx-swap="innerHTML">
+    <div class="phase-label">current phase</div>
+    <div class="phase-value">&#9608; LOADING... &#9608;</div>
+    <div class="countdown">--:--:--</div>
+    <div class="countdown-label">loading...</div>
+  </div>
+
+  <div class="timeline" hx-get="/htmx/timeline" hx-trigger="every 5s" hx-swap="innerHTML">
+    <div class="section-title">&#9472;&#9472; lifecycle timeline &#9472;&#9472;</div>
+    <div class="timeline-bar"><div class="timeline-fill"></div></div>
+    <div class="timeline-labels">
+      <span>PROVISION</span><span>V3 RUNNING</span><span>CUTOVER</span><span>D14N ACTIVE</span><span>TEARDOWN</span>
+    </div>
+  </div>
+
+  <div class="tz-block">
+    <div class="section-title">&#9472;&#9472; cutover scheduled &#9472;&#9472;</div>
+    <div class="tz-grid">
+      {% for tz in timezones %}
+      <div class="tz-item"><span class="tz-name">{{ tz.label }}</span><br><span class="tz-time">{{ tz.time }}</span></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="services" hx-get="/htmx/health" hx-trigger="every 10s" hx-swap="innerHTML">
+    <div class="section-title">&#9472;&#9472; service health &#9472;&#9472;</div>
+    {% for svc in services %}
+    <div class="service-row">
+      <span class="service-name">{{ svc.name }}</span>
+      <span class="service-port">{{ svc.port }}</span>
+      <span class="service-status"><span class="dot unknown"></span><span class="status-text" style="color:#555">CHECKING...</span></span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="endpoints">
+    <div class="section-title">&#9472;&#9472; connect to network &#9472;&#9472;</div>
+    {% for ep in endpoints %}
+    <div class="endpoint-row">
+      <span class="endpoint-name">{{ ep.label }}</span>
+      <span class="endpoint-url">{{ ep.url }}</span>
+      <button class="copy-btn" onclick="copyEndpoint(this)" title="Copy">&#9112;</button>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="links">
+    <div class="section-title">&#9472;&#9472; dashboards &amp; tools &#9472;&#9472;</div>
+    {% for d in dashboards %}
+    <div class="link-row">
+      <span class="link-name">{{ d.name }}</span>
+      <a class="link-url" href="{{ d.url }}" target="_blank" rel="noopener">{{ d.url }}</a>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="server-info">
+    <div class="section-title">&#9472;&#9472; server info &#9472;&#9472;</div>
+    <div class="info-grid">
+      <div class="info-item"><span class="info-label">IP</span><br><span class="info-value">{{ server_ip }}</span></div>
+      <div class="info-item"><span class="info-label">REGION</span><br><span class="info-value">{{ region }}</span></div>
+      <div class="info-item"><span class="info-label">TYPE</span><br><span class="info-value">{{ server_type }}</span></div>
+      {% for v in versions %}
+      <div class="info-item"><span class="info-label">{{ v.name }}</span><br><span class="info-value">{{ v.tag }}</span></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-text">
+      &#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;<br>
+      <a href="https://github.com/xmtp/xmtpd" target="_blank" rel="noopener">XNET</a> &#9733; <a href="https://xmtp.com" target="_blank" rel="noopener">XMTP LABS</a> &#9733; <a href="https://github.com/xmtp/libxmtp" target="_blank" rel="noopener">github</a><br>
+      &#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;
+    </div>
+  </div>
+
+</div>
+
+<script>
+function copyEndpoint(btn) {
+  var row = btn.closest('.endpoint-row');
+  var url = row.querySelector('.endpoint-url').textContent;
+  navigator.clipboard.writeText(url).then(function() {
+    btn.classList.add('copied');
+    btn.innerHTML = '&#10003;';
+    setTimeout(function() {
+      btn.classList.remove('copied');
+      btn.innerHTML = '&#9112;';
+    }, 2000);
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{% if has_progress %}
+  {% for table in tables %}
+  <div style="font-size:11px;margin:3px 0;font-family:monospace;">
+    <span style="color:#aaa;display:inline-block;min-width:160px;">{{ table.name }}</span>
+    <span style="color:{{ table.color }};">{{ table.bar }}</span>
+    <span style="color:{{ table.color }};margin-left:6px;">{{ table.percent }}%</span>
+  </div>
+  {% endfor %}
+{% else %}
+  <div style="color:#555;font-size:11px;text-align:center;">Waiting for migration metrics...</div>
+{% endif %}

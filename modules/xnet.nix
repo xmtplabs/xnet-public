@@ -72,6 +72,9 @@ let
       enable_d14n = cfg.settings.enableD14n;
       enable_monitoring = cfg.settings.enableMonitoring;
     }
+    // lib.optionalAttrs cfg.settings.useTls {
+      use_tls = true;
+    }
     // lib.optionalAttrs (cfg.settings.remote_ip != null) {
       remote_ip = cfg.settings.remote_ip;
     }
@@ -90,11 +93,6 @@ let
     }
     // lib.optionalAttrs (cfg.settings.traefik.https_port != null) {
       https_port = cfg.settings.traefik.https_port;
-    }
-    // lib.optionalAttrs cfg.settings.traefik.acme.enable {
-      acme = {
-        inherit (cfg.settings.traefik.acme) email storage;
-      };
     };
 
     toxiproxy = {
@@ -175,6 +173,12 @@ in
         description = "if running on a public server, the public ip of the server to route with";
       };
 
+      useTls = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Enable TLS mode. Gateway returns https:// URLs, Traefik uses file-based cert.";
+      };
+
       remote_domain = lib.mkOption {
         type = lib.types.nullOr lib.types.str;
         default = null;
@@ -217,23 +221,6 @@ in
           type = lib.types.nullOr lib.types.port;
           default = null;
           description = "Override the Traefik HTTPS host port (default: 443)";
-        };
-        acme = {
-          enable = lib.mkOption {
-            type = lib.types.bool;
-            default = false;
-            description = "Enable Let's Encrypt ACME for TLS certificates";
-          };
-          email = lib.mkOption {
-            type = lib.types.str;
-            default = "ops@xmtp.com";
-            description = "ACME account email";
-          };
-          storage = lib.mkOption {
-            type = lib.types.str;
-            default = "/tmp/xnet/traefik/acme.json";
-            description = "Path for ACME certificate storage";
-          };
         };
       };
 
