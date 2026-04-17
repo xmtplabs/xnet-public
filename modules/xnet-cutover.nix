@@ -93,14 +93,16 @@ let
           | jq -r '.data.result[0].value[1] // "0"' 2>/dev/null || echo "0")
         if [ "$SRC" = "0" ] || [ -z "$SRC" ]; then
           echo "  $TABLE: no source data (done)"
-          PROGRESS_SUMMARY="$PROGRESS_SUMMARY\n  $TABLE: done (no data)"
+          PROGRESS_SUMMARY="$PROGRESS_SUMMARY
+  $TABLE: done (no data)"
           continue
         fi
         QUERY="clamp_max(clamp_min(100*(max(xmtp_migrator_destination_last_sequence_id{table=\"$TABLE\"})/clamp_min(max(xmtp_migrator_source_last_sequence_id{table=\"$TABLE\"}),1)),0),100)"
         PCT=$(curl -s --fail "http://localhost:9090/api/v1/query" --data-urlencode "query=$QUERY" \
           | jq -r '.data.result[0].value[1] // "0"' 2>/dev/null || echo "0")
         echo "  $TABLE: $PCT%"
-        PROGRESS_SUMMARY="$PROGRESS_SUMMARY\n  $TABLE: $PCT%"
+        PROGRESS_SUMMARY="$PROGRESS_SUMMARY
+  $TABLE: $PCT%"
         PCT_INT=''${PCT%%.*}
         if [ "$(echo "$PCT < 100" | bc -l)" = "1" ]; then
           ALL_DONE=false
@@ -112,7 +114,8 @@ let
 
       if [ "$ALL_DONE" = "true" ]; then
         echo ":: All tables migrated to 100%!"
-        notify_slack ":white_check_mark: xnet migration complete! All tables at 100%. Activating d14n.\nhttp://migrate.xmtp.run"
+        notify_slack ":white_check_mark: xnet migration complete! All tables at 100%. Activating d14n.
+http://migrate.xmtp.run"
         break
       fi
 
@@ -121,7 +124,10 @@ let
         if [ "$ELAPSED" -ge "$threshold" ] && ! echo "$NOTIFIED" | grep -q " $threshold "; then
           NOTIFIED="$NOTIFIED $threshold "
           MINS=$((ELAPSED / 60))
-          notify_slack ":warning: xnet migration still running after ''${MINS}min\nMin progress: ''${MIN_PCT}%$PROGRESS_SUMMARY\n:link: http://migrate.xmtp.run"
+          notify_slack ":warning: xnet migration still running after ''${MINS}min
+Min progress: ''${MIN_PCT}%
+$PROGRESS_SUMMARY
+:link: http://migrate.xmtp.run"
         fi
       done
 
@@ -133,7 +139,8 @@ let
     echo "Activating d14n..."
     ${cfg.package}/bin/xnet-cli activate-d14n
     echo "d14n activated at $(date -u '+%Y-%m-%d %H:%M UTC')"
-    notify_slack ":rocket: d14n activated at $(date -u '+%Y-%m-%d %H:%M UTC')\nhttp://migrate.xmtp.run"
+    notify_slack ":rocket: d14n activated at $(date -u '+%Y-%m-%d %H:%M UTC')
+http://migrate.xmtp.run"
   '';
 
 in

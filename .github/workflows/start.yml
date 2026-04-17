@@ -54,6 +54,8 @@ jobs:
       - name: Notify Slack on failure
         if: failure()
         run: |
+          MSG=":x: xnet-start workflow failed
+          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           curl -s -X POST -H 'Content-type: application/json' \
-            --data "{\"text\":\":x: xnet-start workflow failed\\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+            --data "$(jq -n --arg text "$MSG" '{text: $text}')" \
             "$SLACK_WEBHOOK_URL" || true
