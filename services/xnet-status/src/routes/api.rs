@@ -184,7 +184,7 @@ async fn api_status(State(state): State<Arc<AppState>>) -> Json<StatusResponse> 
     let migration = state.migration_progress.read().await.clone();
     let health = state.container_health.read().await.clone();
 
-    let current_phase = phase::compute_phase(state.cutover_ns, &migration);
+    let current_phase = phase::compute_phase_at(now, state.cutover_ns, &migration);
 
     let services: BTreeMap<String, ServiceStatus> = health
         .iter()

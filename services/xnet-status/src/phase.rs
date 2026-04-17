@@ -55,7 +55,7 @@ pub fn compute_phase(
     compute_phase_at(now_ns(), cutover_ns, migration)
 }
 
-fn compute_phase_at(
+pub(crate) fn compute_phase_at(
     now: u64,
     cutover_ns: Option<u64>,
     migration: &MigrationState,
