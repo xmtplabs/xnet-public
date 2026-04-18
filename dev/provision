@@ -100,12 +100,6 @@ echo "XNET_CUTOVER_TIMESTAMP=${CUTOVER_TS}" > "$EXTRA_DIR/etc/xnet/cutover-env"
 if [ -n "${SLACK_WEBHOOK_URL:-}" ]; then
   echo "SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}" >> "$EXTRA_DIR/etc/xnet/cutover-env"
 fi
-if [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
-  mkdir -p "$EXTRA_DIR/etc/xnet"
-  echo "dns_cloudflare_api_token = ${CLOUDFLARE_API_TOKEN}" > "$EXTRA_DIR/etc/xnet/cloudflare.ini"
-  chmod 600 "$EXTRA_DIR/etc/xnet/cloudflare.ini"
-fi
-
 # --- Deploy NixOS ---
 LOG_FILE="${LOG_DIR:-./xnet-logs}/provision-$(date +%Y%m%d-%H%M%S).log"
 mkdir -p "$(dirname "$LOG_FILE")"

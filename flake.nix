@@ -36,8 +36,6 @@
             services.xnet = {
               enable = true;
               settings = {
-                traefik.https_port = 443;
-                useTls = true;
                 paused = true;
                 xmtpd = {
                   version = "v1.3.0";
@@ -188,6 +186,61 @@
               src = ./services/xnet-status;
               cargoLock.lockFile = ./services/xnet-status/Cargo.lock;
             };
+            packages.xnet-status-image =
+              let
+                logo = pkgs.fetchurl {
+                  url = "https://raw.githubusercontent.com/xmtp/libxmtp/main/apps/xnet/gui/assets/logo.png";
+                  sha256 = "sha256-+X/sYIPIec7MN2/xFh08I3yE3fEuMq5vllqS+ZpzWmA=";
+                };
+                logoBase64 = pkgs.runCommand "logo-base64" { } ''
+                  ${pkgs.coreutils}/bin/base64 -w0 ${logo} > $out
+                '';
+                pkg = pkgs.rustPlatform.buildRustPackage {
+                  pname = "xnet-status";
+                  version = "0.1.0";
+                  src = ./services/xnet-status;
+                  cargoLock.lockFile = ./services/xnet-status/Cargo.lock;
+                  postInstall = ''
+                    mkdir -p $out/share/xnet-status/static
+                    cp ${./services/xnet-status/static/style.css} $out/share/xnet-status/static/style.css
+                    cp ${logoBase64} $out/share/xnet-status/static/logo.b64
+                  '';
+                };
+                testConfig = pkgs.writeText "xnet-status.toml" ''
+                  [status]
+                  listen = "0.0.0.0:8899"
+                  prometheus_url = "http://localhost:9090"
+                  docker_socket = "/var/run/docker.sock"
+                  cutover_env_path = "/etc/xnet/cutover-env"
+
+                  [status.server]
+                  ip = "127.0.0.1"
+                  domain = ""
+                  region = "local"
+                  server_type = "test"
+                  use_tls = false
+                '';
+              in
+              pkgs.dockerTools.buildImage {
+                name = "xnet-status";
+                tag = "latest";
+                copyToRoot = pkgs.buildEnv {
+                  name = "xnet-status-root";
+                  paths = [
+                    pkg
+                    pkgs.cacert
+                    (pkgs.runCommand "xnet-status-config" { } ''
+                      mkdir -p $out/etc/xnet
+                      cp ${testConfig} $out/etc/xnet/status.toml
+                    '')
+                  ];
+                };
+                config = {
+                  Cmd = [ "${pkg}/bin/xnet-status" "--config" "/etc/xnet/status.toml" ];
+                  WorkingDirectory = "${pkg}/share/xnet-status";
+                  ExposedPorts = { "8899/tcp" = { }; };
+                };
+              };
             devShells.default = pkgs.mkShell {
               nativeBuildInputs = with pkgs; [
                 nixos-anywhere
