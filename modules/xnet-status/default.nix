@@ -31,10 +31,29 @@ let
     '';
   };
 
+  xnet-status-image = pkgs.dockerTools.buildImage {
+    name = "xnet-status";
+    tag = "latest";
+    copyToRoot = pkgs.buildEnv {
+      name = "xnet-status-root";
+      paths = [
+        xnet-status-pkg
+        pkgs.cacert  # TLS root certs for outbound HTTPS
+      ];
+    };
+    config = {
+      Cmd = [ "${xnet-status-pkg}/bin/xnet-status" "--config" "/etc/xnet/status.toml" ];
+      WorkingDirectory = "${xnet-status-pkg}/share/xnet-status";
+      ExposedPorts = {
+        "8899/tcp" = {};
+      };
+    };
+  };
+
   configFile = pkgs.writeText "xnet-status.toml" ''
     [status]
     listen = "0.0.0.0:8899"
-    prometheus_url = "http://localhost:9090"
+    prometheus_url = "http://xnet-prometheus:9090"
     docker_socket = "/var/run/docker.sock"
     cutover_env_path = "/etc/xnet/cutover-env"
 
@@ -126,31 +145,46 @@ in
       '';
     };
 
-    # Rust-based status page and API server (replaces Caddy Docker + health timer)
+    # Rust-based status page and API server (Docker container on xnet network)
     systemd.services.xnet-status = {
       description = "xnet status page and API";
       after = [ "xnet.service" "docker.service" "network-online.target" ];
       wants = [ "xnet.service" "network-online.target" ];
       requires = [ "docker.service" ];
       wantedBy = [ "multi-user.target" ];
+      path = [ pkgs.docker ];
       serviceConfig = {
-        ExecStart = "${xnet-status-pkg}/bin/xnet-status --config ${configFile}";
-        WorkingDirectory = "${xnet-status-pkg}/share/xnet-status";
-        Restart = "always";
-        RestartSec = 5;
+        Type = "oneshot";
+        RemainAfterExit = true;
         SupplementaryGroups = [ "docker" ];
-        DynamicUser = false;
-        ProtectSystem = "strict";
-        ReadWritePaths = [ "/tmp/xnet" ];
-        ReadOnlyPaths = [ "/etc/xnet" "/var/run/docker.sock" ];
       };
+      script = ''
+        # Load image from Nix store
+        docker load < ${xnet-status-image}
+
+        # Remove old container if exists
+        docker rm -f xnet-status 2>/dev/null || true
+
+        # Run on xnet network so Traefik can reach it by container name
+        docker run -d \
+          --name xnet-status \
+          --network xnet \
+          --restart unless-stopped \
+          -v ${configFile}:/etc/xnet/status.toml:ro \
+          -v /etc/xnet:/etc/xnet:ro \
+          -v /var/run/docker.sock:/var/run/docker.sock:ro \
+          xnet-status:latest
+      '';
+      preStop = ''
+        docker rm -f xnet-status 2>/dev/null || true
+      '';
     };
 
     # Route domains to services via Traefik
-    # Status page now at 127.0.0.1:8899 on host (not Docker)
+    # Status page runs as Docker container on xnet network
     services.xnet.settings.extraTraefikRoutes = [
-      { name = "status-page"; rule = "Host(`${cfg.domain}`)"; url = "http://127.0.0.1:8899"; priority = 100; tls = true; }
-      { name = "status-page-fallback"; rule = "PathPrefix(`/`)"; url = "http://127.0.0.1:8899"; priority = 1; }
+      { name = "status-page"; rule = "Host(`${cfg.domain}`)"; url = "http://xnet-status:8899"; priority = 100; tls = true; }
+      { name = "status-page-fallback"; rule = "PathPrefix(`/`)"; url = "http://xnet-status:8899"; priority = 1; }
       { name = "grafana"; rule = "Host(`grafana.xmtp.run`)"; url = "http://xnet-grafana:3000"; priority = null; }
       { name = "prometheus"; rule = "Host(`prometheus.xmtp.run`)"; url = "http://xnet-prometheus:9090"; priority = null; }
       { name = "otterscan"; rule = "Host(`otterscan.xmtp.run`)"; url = "http://xnet-otterscan:80"; priority = null; }
