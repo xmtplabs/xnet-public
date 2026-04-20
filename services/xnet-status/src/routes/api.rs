@@ -54,7 +54,6 @@ struct ContractsInfo {
 
 #[derive(Serialize)]
 struct ServerInfoResponse {
-    ip: String,
     domain: String,
     region: String,
     #[serde(rename = "type")]
@@ -212,7 +211,6 @@ async fn api_status(State(state): State<Arc<AppState>>) -> Json<StatusResponse> 
         services,
         contracts: ContractsInfo { paused: false },
         server: ServerInfoResponse {
-            ip: cfg.server.ip.clone(),
             domain: cfg.server.domain.clone(),
             region: cfg.server.region.clone(),
             server_type: cfg.server.server_type.clone(),

@@ -62,7 +62,6 @@ let
     cutover_env_path = "/host/xnet/cutover-env"
 
     [status.server]
-    ip = "${if cfg.serverIp != null then cfg.serverIp else if xnetCfg.settings.remote_ip != null then toString xnetCfg.settings.remote_ip else ""}"
     domain = "${if xnetCfg.settings.remote_domain != null then xnetCfg.settings.remote_domain else ""}"
     region = "${cfg.region}"
     server_type = "${cfg.serverType}"

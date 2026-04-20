@@ -21,7 +21,6 @@ pub struct StatusSection {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ServerInfo {
-    pub ip: String,
     pub domain: String,
     pub region: String,
     pub server_type: String,
@@ -59,7 +58,6 @@ listen = "0.0.0.0:8899"
 prometheus_url = "http://localhost:9090"
 cutover_env_path = "/etc/xnet/cutover-env"
 [status.server]
-ip = "5.78.25.67"
 domain = "xmtp.run"
 region = "hil (Hillsboro, OR)"
 server_type = "cpx51"
@@ -69,7 +67,6 @@ use_tls = true
     const MINIMAL: &str = r#"
 [status]
 [status.server]
-ip = "1.2.3.4"
 domain = "test.run"
 region = "test"
 server_type = "cx21"
@@ -78,7 +75,7 @@ server_type = "cx21"
     #[test]
     fn parse_full_config() {
         let c: StatusConfig = toml::from_str(FULL).unwrap();
-        assert_eq!(c.status.server.ip, "5.78.25.67");
+        assert_eq!(c.status.server.domain, "xmtp.run");
         assert!(c.status.server.use_tls);
         assert_eq!(c.status.cutover_env_path.unwrap().to_str().unwrap(), "/etc/xnet/cutover-env");
     }
