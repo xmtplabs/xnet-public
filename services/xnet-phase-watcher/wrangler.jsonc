@@ -1,0 +1,29 @@
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "xnet-phase-watcher",
+  "main": "build/worker/shim.mjs",
+  "compatibility_date": "2025-11-01",
+  "build": {
+    "command": "cargo install -q worker-build && worker-build --release"
+  },
+  "triggers": {
+    "crons": ["* * * * *"]
+  },
+  "kv_namespaces": [
+    {
+      "binding": "PHASE_STATE",
+      "id": "REPLACE_WITH_WRANGLER_KV_CREATE_OUTPUT"
+    }
+  ],
+  "vars": {
+    "STATUS_URL": "https://migrate.xmtp.run/api/status",
+    "GH_OWNER": "xmtp",
+    "GH_REPO": "xmtp-metrics",
+    "GH_WORKFLOW": "xnet-tests.yml",
+    "GH_REF": "main",
+    "TRIGGER_PHASES": "awaiting_cutover,d14n_active"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

@@ -239,6 +239,7 @@
                 config = {
                   Cmd = [ "${pkg}/bin/xnet-status" "--config" "/etc/xnet/status.toml" ];
                   WorkingDirectory = "${pkg}/share/xnet-status";
+                  Env = [ "XNET_STATUS_SHARE=${pkg}/share/xnet-status" ];
                   ExposedPorts = { "8899/tcp" = { }; };
                 };
               };

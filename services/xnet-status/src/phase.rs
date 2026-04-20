@@ -13,7 +13,26 @@ pub enum Phase {
     TeardownImminent,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PhaseKind {
+    Unknown,
+    AwaitingCutover,
+    Migrating,
+    D14nActive,
+    TeardownImminent,
+}
+
 impl Phase {
+    pub fn kind(&self) -> PhaseKind {
+        match self {
+            Phase::Unknown => PhaseKind::Unknown,
+            Phase::AwaitingCutover { .. } => PhaseKind::AwaitingCutover,
+            Phase::Migrating { .. } => PhaseKind::Migrating,
+            Phase::D14nActive { .. } => PhaseKind::D14nActive,
+            Phase::TeardownImminent => PhaseKind::TeardownImminent,
+        }
+    }
+
     pub fn label(&self) -> &'static str {
         match self {
             Phase::Unknown => "UNKNOWN",

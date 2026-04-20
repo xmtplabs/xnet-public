@@ -1,14 +1,21 @@
 use crate::config::StatusSection;
+use crate::events::{PhaseEvent, TransitionTracker};
 use crate::health::{self, HealthMap};
 use crate::migration::MigrationState;
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use tokio::sync::{broadcast, RwLock};
+
+/// Broadcast channel capacity. Only transitions flow through this channel,
+/// so 32 is plenty. Lagging subscribers get dropped and are expected to reconnect.
+pub const PHASE_CHANNEL_CAPACITY: usize = 32;
 
 pub struct AppState {
     pub container_health: RwLock<HealthMap>,
     pub migration_progress: RwLock<MigrationState>,
     pub cutover_ns: Option<u64>,
     pub config: StatusSection,
+    pub phase_tx: broadcast::Sender<PhaseEvent>,
+    pub transition_tracker: RwLock<TransitionTracker>,
 }
 
 impl AppState {
@@ -18,11 +25,15 @@ impl AppState {
             .as_ref()
             .and_then(|path| read_cutover_timestamp(path));
 
+        let (phase_tx, _) = broadcast::channel(PHASE_CHANNEL_CAPACITY);
+
         Arc::new(Self {
             container_health: RwLock::new(HealthMap::new()),
             migration_progress: RwLock::new(MigrationState::default()),
             cutover_ns: cutover_ts,
             config,
+            phase_tx,
+            transition_tracker: RwLock::new(TransitionTracker::default()),
         })
     }
 }
@@ -46,6 +57,11 @@ pub fn spawn_background_tasks(state: Arc<AppState>) {
     let prom_state = state.clone();
     tokio::spawn(async move {
         poll_migration_loop(prom_state).await;
+    });
+
+    let phase_state = state.clone();
+    tokio::spawn(async move {
+        detect_phase_transitions_loop(phase_state).await;
     });
 }
 
@@ -108,6 +124,39 @@ async fn poll_migration_loop(state: Arc<AppState>) {
             Err(e) => {
                 tracing::warn!("migration poll failed: {}", e);
             }
+        }
+    }
+}
+
+/// Piggybacks on existing state polls to emit PhaseEvent transitions
+/// onto the broadcast channel. Runs at 2s cadence — tighter than the
+/// migration poll, but each tick is cheap (just enum comparison).
+async fn detect_phase_transitions_loop(state: Arc<AppState>) {
+    let mut interval = tokio::time::interval(std::time::Duration::from_secs(2));
+    loop {
+        interval.tick().await;
+
+        let now_ns = crate::phase::now_ns();
+        let migration = state.migration_progress.read().await.clone();
+        let health = state.container_health.read().await.clone();
+        let phase = crate::phase::compute_phase_at(now_ns, state.cutover_ns, &migration);
+        let domain = state.config.server.domain.clone();
+
+        let mut tracker = state.transition_tracker.write().await;
+        let events = crate::events::compute_transitions(
+            &mut tracker,
+            now_ns,
+            state.cutover_ns,
+            &phase,
+            &migration,
+            &health,
+            &domain,
+        );
+        drop(tracker);
+
+        for event in events {
+            // SendError only fires when there are no subscribers; harmless.
+            let _ = state.phase_tx.send(event);
         }
     }
 }

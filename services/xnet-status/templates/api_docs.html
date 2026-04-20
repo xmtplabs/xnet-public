@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xnet API</title>
+<style>{{ css|safe }}</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/styles/atom-one-dark.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/languages/javascript.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/languages/json.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/languages/bash.min.js"></script>
+<style>
+  .endpoint { border: 1px solid #222; background: #050510; padding: 12px; margin-bottom: 12px; }
+  .method { color: #0ff; font-weight: bold; }
+  .path { color: #ff0; font-family: monospace; }
+  .desc { color: #aaa; font-size: 12px; margin: 6px 0; }
+
+  /* Override base styles for inline docs */
+  .endpoint pre {
+    margin: 0;
+    background: transparent;
+    padding: 0;
+    border: 0;
+    overflow: visible;
+  }
+  .endpoint code.hljs {
+    display: block;
+    padding: 10px 36px 10px 10px;
+    font-size: 11px;
+    line-height: 1.45;
+    border: 1px solid #1a1a1a;
+    background: #0b0d12;
+    border-radius: 3px;
+    overflow-x: auto;
+  }
+
+  .code-block { position: relative; margin-top: 6px; }
+  .copy-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: #111;
+    color: #0ff;
+    border: 1px solid #1a1a1a;
+    font-family: monospace;
+    font-size: 10px;
+    padding: 3px 7px;
+    cursor: pointer;
+    user-select: none;
+    border-radius: 2px;
+  }
+  .copy-btn:hover { color: #ff0; border-color: #333; }
+  .copy-btn.copied { color: #0f0; border-color: #0f0; }
+
+  .foldable { margin-top: 8px; }
+  .foldable summary {
+    color: #0ff;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: monospace;
+    user-select: none;
+    padding: 2px 0;
+  }
+  .foldable summary:hover { color: #ff0; }
+  .foldable[open] summary { color: #ff0; }
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<div class="container">
+  <div class="header">
+    <div class="header-bar">&#9608;&#9608; XNET API &#9608;&#9608;</div>
+    <div class="logo-area">
+      <div><div class="title">API</div><div class="subtitle-text">read-only endpoints</div></div>
+    </div>
+  </div>
+
+  <div class="blurb">
+    Public read-only API for the xnet ephemeral network. All endpoints return JSON
+    (except <span class="path">/api/events</span>, which is <span class="path">text/event-stream</span>).
+    <a href="/" style="color:#0ff;">&#8592; back to status</a>
+  </div>
+
+  <div class="endpoint">
+    <div><span class="method">GET</span> <span class="path">/api/status</span></div>
+    <div class="desc">Full status: phase, cutover, migration, services, versions, endpoints, dashboards.</div>
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this)">copy</button>
+      <pre><code class="language-bash">curl https://migrate.xmtp.run/api/status</code></pre>
+    </div>
+    <details class="foldable">
+      <summary>Node.js example</summary>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        <pre><code class="language-javascript">// Node.js 18+
+const res = await fetch("https://migrate.xmtp.run/api/status");
+if (!res.ok) throw new Error(`HTTP ${res.status}`);
+const status = await res.json();
+console.log("phase:", status.phase);
+console.log("cutover:", status.cutover?.scheduled_utc);
+console.log("migration tables:", Object.keys(status.migration?.message_types ?? {}));</code></pre>
+      </div>
+    </details>
+    <details class="foldable">
+      <summary>Example response</summary>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        <pre><code class="language-json">{
+  "phase": "awaiting_cutover",
+  "cutover": {
+    "timestamp_ns": 1776458000000000000,
+    "timestamp_s": 1776458000,
+    "scheduled_utc": "2026-04-20T19:00:00Z",
+    "elapsed_since_cutover_s": null,
+    "time_until_teardown_s": 18000
+  },
+  "migration": {
+    "message_types": {}
+  },
+  "services": {
+    "xnet-100": { "state": "running", "status": "Up 2 hours (healthy)", "up": true },
+    "xnet-node": { "state": "running", "status": "Up 2 hours (healthy)", "up": true }
+  },
+  "contracts": { "paused": false },
+  "server": {
+    "domain": "xmtp.run",
+    "region": "hil (Hillsboro, OR)",
+    "type": "cpx51",
+    "tls": true,
+    "uptime_s": 7200
+  },
+  "versions": { "xmtpd": "v1.3.0", "node_go": "main", "contracts": "v2026.02.10-1" },
+  "endpoints": {
+    "xmtpd": "https://xnet-100.xmtp.run",
+    "node_go": "https://node-go.xmtp.run",
+    "gateway": "https://gateway.xmtp.run"
+  },
+  "dashboards": {
+    "grafana": "https://grafana.xmtp.run",
+    "prometheus": "https://prometheus.xmtp.run",
+    "otterscan": "https://otterscan.xmtp.run"
+  }
+}</code></pre>
+      </div>
+    </details>
+  </div>
+
+  <div class="endpoint">
+    <div><span class="method">GET</span> <span class="path">/api/health</span></div>
+    <div class="desc">Docker container health (state, up/down) for all xnet-* containers.</div>
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this)">copy</button>
+      <pre><code class="language-bash">curl https://migrate.xmtp.run/api/health</code></pre>
+    </div>
+    <details class="foldable">
+      <summary>Node.js example</summary>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        <pre><code class="language-javascript">// Node.js 18+
+const res = await fetch("https://migrate.xmtp.run/api/health");
+const health = await res.json();
+for (const [name, c] of Object.entries(health)) {
+  console.log(`${name.padEnd(20)} ${c.state}  up=${c.up}`);
+}</code></pre>
+      </div>
+    </details>
+    <details class="foldable">
+      <summary>Example response</summary>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        <pre><code class="language-json">{
+  "xnet-100": {
+    "display_name": "100",
+    "port": 5050,
+    "state": "running",
+    "status": "Up 2 hours (healthy)",
+    "up": true,
+    "image_tag": "v1.3.0"
+  },
+  "xnet-node": {
+    "display_name": "node",
+    "port": 5556,
+    "state": "running",
+    "status": "Up 2 hours (healthy)",
+    "up": true,
+    "image_tag": "main"
+  }
+}</code></pre>
+      </div>
+    </details>
+  </div>
+
+  <div class="endpoint">
+    <div><span class="method">GET</span> <span class="path">/api/migration</span></div>
+    <div class="desc">Per-table v3 &#x2192; d14n migration progress. Percentages and source/dest seq IDs.</div>
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this)">copy</button>
+      <pre><code class="language-bash">curl https://migrate.xmtp.run/api/migration</code></pre>
+    </div>
+    <details class="foldable">
+      <summary>Node.js example</summary>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        <pre><code class="language-javascript">// Node.js 18+ — poll migration until complete
+async function waitForMigration() {
+  while (true) {
+    const res = await fetch("https://migrate.xmtp.run/api/migration");
+    const m = await res.json();
+    const types = Object.entries(m.message_types ?? {});
+    if (!types.length) { console.log("no progress yet"); }
+    for (const [k, t] of types) {
+      console.log(`  ${k.padEnd(20)} ${t.percent.toFixed(1)}%  (${t.dest_seq}/${t.source_seq})`);
+    }
+    const done = types.length > 0 &amp;&amp; types.every(([, t]) =&gt; t.percent &gt;= 100);
+    if (done) return;
+    await new Promise(r =&gt; setTimeout(r, 5000));
+  }
+}
+await waitForMigration();</code></pre>
+      </div>
+    </details>
+    <details class="foldable">
+      <summary>Example response</summary>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        <pre><code class="language-json">{
+  "message_types": {
+    "group_messages": { "source_seq": 10000, "dest_seq": 4250, "percent": 42.5 },
+    "commit_messages": { "source_seq": 5000, "dest_seq": 5000, "percent": 100.0 },
+    "key_packages": { "source_seq": 1200, "dest_seq": 300, "percent": 25.0 },
+    "inbox_log": { "source_seq": 800, "dest_seq": 800, "percent": 100.0 }
+  }
+}</code></pre>
+      </div>
+    </details>
+  </div>
+
+  <div class="endpoint">
+    <div><span class="method">GET</span> <span class="path">/api/cutover</span></div>
+    <div class="desc">Cutover timestamp, current phase, scheduled time in multiple timezones.</div>
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this)">copy</button>
+      <pre><code class="language-bash">curl https://migrate.xmtp.run/api/cutover</code></pre>
+    </div>
+    <details class="foldable">
+      <summary>Node.js example</summary>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        <pre><code class="language-javascript">// Node.js 18+
+const res = await fetch("https://migrate.xmtp.run/api/cutover");
+const cutover = await res.json();
+console.log("phase:", cutover.phase);
+console.log("scheduled (UTC):", cutover.scheduled_utc);
+console.log("timestamp_s:", cutover.timestamp_s);</code></pre>
+      </div>
+    </details>
+    <details class="foldable">
+      <summary>Example response</summary>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        <pre><code class="language-json">{
+  "timestamp_ns": 1776458000000000000,
+  "timestamp_s": 1776458000,
+  "phase": "awaiting_cutover",
+  "scheduled_utc": "2026-04-20T19:00:00Z",
+  "timezones": {
+    "UTC": "2026-04-20 19:00",
+    "America/Los_Angeles": "2026-04-20 12:00 PDT",
+    "America/New_York": "2026-04-20 15:00 EDT",
+    "Europe/Berlin": "2026-04-20 21:00 CEST"
+  }
+}</code></pre>
+      </div>
+    </details>
+  </div>
+
+  <div class="endpoint">
+    <div><span class="method">GET</span> <span class="path">/api/nodes</span></div>
+    <div class="desc">xmtpd node info (IDs, URLs, health status).</div>
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this)">copy</button>
+      <pre><code class="language-bash">curl https://migrate.xmtp.run/api/nodes</code></pre>
+    </div>
+    <details class="foldable">
+      <summary>Node.js example</summary>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        <pre><code class="language-javascript">// Node.js 18+
+const res = await fetch("https://migrate.xmtp.run/api/nodes");
+const { nodes } = await res.json();
+for (const [id, n] of Object.entries(nodes)) {
+  console.log(`node ${id}  ${n.url}  healthy=${n.healthy}`);
+}</code></pre>
+      </div>
+    </details>
+    <details class="foldable">
+      <summary>Example response</summary>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        <pre><code class="language-json">{
+  "nodes": {
+    "100": {
+      "url": "https://xnet-100.xmtp.run",
+      "migrator": false,
+      "healthy": true
+    }
+  }
+}</code></pre>
+      </div>
+    </details>
+  </div>
+
+  <div class="endpoint">
+    <div><span class="method">GET</span> <span class="path">/api/events</span></div>
+    <div class="desc">
+      Server-Sent Events stream. Pushes phase transitions (<code>v3_running</code>,
+      <code>cutover_started</code>, <code>migrating</code>, <code>migration_complete</code>,
+      <code>d14n_active</code>, <code>teardown_imminent</code>) as they happen.
+      First frame is a <code>connected</code> event describing current state.
+      Clients reconnect automatically on disconnect.
+    </div>
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this)">copy</button>
+      <pre><code class="language-bash">curl -N https://migrate.xmtp.run/api/events</code></pre>
+    </div>
+    <details class="foldable">
+      <summary>Node.js example</summary>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">copy</button>
+        <pre><code class="language-javascript">// Node.js 18+ — streams SSE events, handles frames manually.
+// For production use, prefer the `eventsource` npm package which handles
+// reconnects, backoff, and Last-Event-ID automatically.
+async function watchEvents() {
+  const res = await fetch("https://migrate.xmtp.run/api/events", {
+    headers: { accept: "text/event-stream" },
+  });
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    let idx;
+    while ((idx = buffer.indexOf("\n\n")) !== -1) {
+      const frame = buffer.slice(0, idx);
+      buffer = buffer.slice(idx + 2);
+      const dataLine = frame.split("\n").find(l =&gt; l.startsWith("data: "));
+      if (!dataLine) continue;
+      const event = JSON.parse(dataLine.slice(6));
+      console.log(`[${event.type}] at ${event.timestamp_s}`);
+      if (event.type === "v3_running") {
+        // kick off tests...
+      }
+    }
+  }
+}
+watchEvents().catch(err =&gt; {
+  console.error("stream closed:", err);
+  // reconnect with backoff in real code
+});</code></pre>
+      </div>
+    </details>
+    <details class="foldable">
+      <summary>Example events (wire format)</summary>
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this)">copy</button>
+<pre><code class="language-bash">event: phase
+data: {"type":"connected","phase":"awaiting_cutover","timestamp_s":1776443504,"cutover_ts_s":1776458000,"domain":"xmtp.run","migration":{"overall_percent":0.0,"tables":[]}}
+
+event: phase
+data: {"type":"v3_running","timestamp_s":1776443510,"cutover_ts_s":1776458000,"domain":"xmtp.run"}
+
+event: phase
+data: {"type":"cutover_started","timestamp_s":1776458000,"domain":"xmtp.run"}
+
+event: phase
+data: {"type":"migration_complete","timestamp_s":1776458120,"domain":"xmtp.run","duration_s":120}
+
+event: phase
+data: {"type":"d14n_active","timestamp_s":1776458120,"domain":"xmtp.run"}
+
+:keepalive</code></pre>
+      </div>
+    </details>
+  </div>
+
+  <div class="footer">
+    <div class="footer-text">
+      &#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;<br>
+      <a href="https://github.com/xmtp/xmtpd">XNET</a> &#9733; <a href="https://xmtp.com">XMTP LABS</a> &#9733; <a href="https://github.com/xmtp/libxmtp">github</a><br>
+      &#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;
+    </div>
+  </div>
+</div>
+
+<script>
+  // Highlight all code blocks on load.
+  document.addEventListener("DOMContentLoaded", () => {
+    if (window.hljs) {
+      hljs.highlightAll();
+    }
+  });
+  // Also highlight code inside <details> after it opens — some browsers skip
+  // invisible subtrees during the initial pass.
+  document.addEventListener("toggle", (e) => {
+    if (e.target.matches("details.foldable") && e.target.open && window.hljs) {
+      e.target.querySelectorAll("pre code").forEach((el) => {
+        if (!el.dataset.highlighted) hljs.highlightElement(el);
+      });
+    }
+  }, true);
+
+  function copyCode(btn) {
+    const block = btn.closest(".code-block");
+    const code = block.querySelector("code");
+    if (!code) return;
+    const text = code.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.classList.add("copied");
+      const original = btn.textContent;
+      btn.textContent = "copied";
+      setTimeout(() => {
+        btn.classList.remove("copied");
+        btn.textContent = original;
+      }, 1500);
+    }).catch(() => {
+      btn.textContent = "failed";
+      setTimeout(() => { btn.textContent = "copy"; }, 1500);
+    });
+  }
+</script>
+</body>
+</html>

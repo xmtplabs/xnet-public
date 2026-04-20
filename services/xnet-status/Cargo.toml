@@ -19,7 +19,13 @@ rustls = { version = "0.23", default-features = false, features = ["ring", "std"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+futures = "0.3"
 toml = "1"
 tower-http = { version = "0.6", features = ["set-header", "fs"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"

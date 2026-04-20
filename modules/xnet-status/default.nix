@@ -48,6 +48,9 @@ let
     config = {
       Cmd = [ "${xnet-status-pkg}/bin/xnet-status" "--config" "/etc/xnet/status.toml" ];
       WorkingDirectory = "${xnet-status-pkg}/share/xnet-status";
+      Env = [
+        "XNET_STATUS_SHARE=${xnet-status-pkg}/share/xnet-status"
+      ];
       ExposedPorts = {
         "8899/tcp" = {};
       };

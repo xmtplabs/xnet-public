@@ -31,16 +31,17 @@
   <div class="blurb">
     Ephemeral <span>XMTP</span> network testing the <span>v3 &#x2192; d14n</span> migration.
     Deploys, runs cutover, then tears down and repeats.
+    <a href="/api" style="color:#0ff;">[api docs]</a>
   </div>
 
-  <div class="phase-block" hx-get="/htmx/phase" hx-trigger="every 1s" hx-swap="innerHTML">
+  <div class="phase-block" hx-get="/htmx/phase" hx-trigger="load, every 1s" hx-swap="innerHTML">
     <div class="phase-label">current phase</div>
     <div class="phase-value">&#9608; LOADING... &#9608;</div>
     <div class="countdown">--:--:--</div>
     <div class="countdown-label">loading...</div>
   </div>
 
-  <div class="timeline" hx-get="/htmx/timeline" hx-trigger="every 5s" hx-swap="innerHTML">
+  <div class="timeline" hx-get="/htmx/timeline" hx-trigger="load, every 5s" hx-swap="innerHTML">
     <div class="section-title">&#9472;&#9472; lifecycle timeline &#9472;&#9472;</div>
     <div class="timeline-bar"><div class="timeline-fill"></div></div>
     <div class="timeline-labels">
@@ -57,7 +58,7 @@
     </div>
   </div>
 
-  <div class="services" hx-get="/htmx/health" hx-trigger="every 10s" hx-swap="innerHTML">
+  <div class="services" hx-get="/htmx/health" hx-trigger="load, every 10s" hx-swap="innerHTML">
     <div class="section-title">&#9472;&#9472; service health &#9472;&#9472;</div>
     {% for svc in services %}
     <div class="service-row">
@@ -104,7 +105,7 @@
   <div class="footer">
     <div class="footer-text">
       &#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;<br>
-      <a href="https://github.com/xmtp/xmtpd" target="_blank" rel="noopener">XNET</a> &#9733; <a href="https://xmtp.com" target="_blank" rel="noopener">XMTP LABS</a> &#9733; <a href="https://github.com/xmtp/libxmtp" target="_blank" rel="noopener">github</a><br>
+      <a href="https://github.com/xmtp/xmtpd" target="_blank" rel="noopener">XNET</a> &#9733; <a href="https://xmtp.com" target="_blank" rel="noopener">XMTP LABS</a> &#9733; <a href="https://github.com/xmtp/libxmtp" target="_blank" rel="noopener">github</a> &#9733; <a href="/api">api</a><br>
       &#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;
     </div>
   </div>

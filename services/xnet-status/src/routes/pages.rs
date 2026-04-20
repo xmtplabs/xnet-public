@@ -8,7 +8,24 @@ use axum::Router;
 use std::sync::Arc;
 
 pub fn routes() -> Router<Arc<AppState>> {
-    Router::new().route("/", get(index_page))
+    Router::new()
+        .route("/", get(index_page))
+        .route("/api", get(api_docs_page))
+        .route("/api/", get(api_docs_page))
+}
+
+#[derive(Template)]
+#[template(path = "api_docs.html")]
+struct ApiDocsPage {
+    css: String,
+}
+
+async fn api_docs_page() -> Result<Html<String>, StatusCode> {
+    let css = include_str!("../../static/style.css").to_string();
+    let tmpl = ApiDocsPage { css };
+    tmpl.render()
+        .map(Html)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
 pub struct TzDisplay {
@@ -56,7 +73,13 @@ async fn index_page(
 ) -> Result<Html<String>, StatusCode> {
     let css = include_str!("../../static/style.css").to_string();
 
-    let logo_base64 = include_str!("../../static/logo.b64").trim().to_string();
+    // Read logo at runtime so the Nix-generated base64 file is used
+    let share_dir = std::env::var("XNET_STATUS_SHARE").unwrap_or_else(|_| ".".to_string());
+    let logo_path = std::path::PathBuf::from(&share_dir).join("static/logo.b64");
+    let logo_base64 = std::fs::read_to_string(&logo_path)
+        .unwrap_or_default()
+        .trim()
+        .to_string();
 
     let cfg = &state.config;
     let health = state.container_health.read().await.clone();

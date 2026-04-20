@@ -1,5 +1,6 @@
 mod config;
 mod cutover;
+mod events;
 mod health;
 mod migration;
 mod phase;
