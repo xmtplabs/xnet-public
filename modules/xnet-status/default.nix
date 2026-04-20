@@ -65,7 +65,7 @@ let
     domain = "${if xnetCfg.settings.remote_domain != null then xnetCfg.settings.remote_domain else ""}"
     region = "${cfg.region}"
     server_type = "${cfg.serverType}"
-    use_tls = ${if xnetCfg.settings.useTls then "true" else "false"}
+    use_tls = ${if xnetCfg.settings.useTls || xnetCfg.settings.publicScheme == "https" then "true" else "false"}
   '';
 
 in

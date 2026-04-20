@@ -75,8 +75,8 @@ let
     // lib.optionalAttrs cfg.settings.useTls {
       use_tls = true;
     }
-    // lib.optionalAttrs (cfg.settings.remote_ip != null) {
-      remote_ip = cfg.settings.remote_ip;
+    // lib.optionalAttrs (cfg.settings.publicScheme != null) {
+      public_scheme = cfg.settings.publicScheme;
     }
     // lib.optionalAttrs (cfg.settings.remote_domain != null) {
       remote_domain = cfg.settings.remote_domain;
@@ -167,22 +167,22 @@ in
         description = "Expose debug ports (toxiproxy, pgadmin, coredns) in the firewall";
       };
 
-      remote_ip = lib.mkOption {
-        type = lib.types.nullOr lib.types.str;
-        default = null;
-        description = "if running on a public server, the public ip of the server to route with";
-      };
-
       useTls = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Enable TLS mode. Gateway returns https:// URLs, Traefik uses file-based cert.";
+        description = "Enable TLS mode. Traefik serves HTTPS and reads cert files from /tmp/xnet/traefik/.";
+      };
+
+      publicScheme = lib.mkOption {
+        type = lib.types.nullOr (lib.types.enum [ "http" "https" ]);
+        default = null;
+        description = "URL scheme for external references (gateway responses, Traefik routes). When TLS terminates at CDN, set to 'https' without useTls.";
       };
 
       remote_domain = lib.mkOption {
         type = lib.types.nullOr lib.types.str;
         default = null;
-        description = "Custom domain for remote addressing (e.g. xmtp.run). Mutually exclusive with remote_ip.";
+        description = "Custom domain for remote addressing (e.g. xmtp.run)";
       };
 
       enableV3 = lib.mkOption {

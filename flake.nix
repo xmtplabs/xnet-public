@@ -36,6 +36,7 @@
             services.xnet = {
               enable = true;
               settings = {
+                publicScheme = "https";
                 paused = true;
                 xmtpd = {
                   version = "v1.3.0";
