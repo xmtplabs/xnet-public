@@ -57,6 +57,20 @@ let
     };
   };
 
+  # Pick out xmtpd nodes marked as migrators, from the xnet settings. This
+  # is the source of truth for "is port X a migrator?" and is baked into
+  # xnet-status' config at eval time — no runtime file parsing needed.
+  migratorNodes = lib.filter
+    (node: node.enable && node.migrator && node.port != null)
+    xnetCfg.settings.xmtpd.nodes;
+
+  migratorNodesToml = lib.concatMapStringsSep "\n"
+    (node: ''
+      [[status.migrator_nodes]]
+      port = ${toString node.port}
+    '')
+    migratorNodes;
+
   configFile = pkgs.writeText "xnet-status.toml" ''
     [status]
     listen = "0.0.0.0:8899"
@@ -69,6 +83,8 @@ let
     region = "${cfg.region}"
     server_type = "${cfg.serverType}"
     use_tls = ${if xnetCfg.settings.useTls || xnetCfg.settings.publicScheme == "https" then "true" else "false"}
+
+    ${migratorNodesToml}
   '';
 
 in

@@ -13,13 +13,18 @@ pub struct ContainerHealth {
 
 pub type HealthMap = BTreeMap<String, ContainerHealth>;
 
-/// Derive a human-friendly display name from a container name.
-/// e.g. "xnet-100" → "100", "xnet-gateway" → "gateway"
+/// Derive a display name from a container name.
+/// Numeric node containers get a clearer label (xmtpd node <id>); other
+/// containers are shown by their full container name so users can map them
+/// back to logs / docker ps.
+/// e.g. "xnet-100" → "xmtpd node 100", "xnet-gateway" → "xnet-gateway"
 fn display_name_for(container_name: &str) -> String {
-    container_name
-        .strip_prefix("xnet-")
-        .unwrap_or(container_name)
-        .to_string()
+    if let Some(id) = container_name.strip_prefix("xnet-") {
+        if !id.is_empty() && id.chars().all(|c| c.is_ascii_digit()) {
+            return format!("xmtpd node {}", id);
+        }
+    }
+    container_name.to_string()
 }
 
 /// Extract the tag from a Docker image reference.
@@ -97,9 +102,10 @@ mod tests {
 
     #[test]
     fn display_names() {
-        assert_eq!(display_name_for("xnet-100"), "100");
-        assert_eq!(display_name_for("xnet-gateway"), "gateway");
+        assert_eq!(display_name_for("xnet-100"), "xmtpd node 100");
+        assert_eq!(display_name_for("xnet-gateway"), "xnet-gateway");
         assert_eq!(display_name_for("other"), "other");
+        assert_eq!(display_name_for("xnet-"), "xnet-");
     }
 
     #[test]

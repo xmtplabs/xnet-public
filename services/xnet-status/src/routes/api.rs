@@ -277,6 +277,8 @@ async fn api_nodes(State(state): State<Arc<AppState>>) -> Json<NodesResponse> {
     let cfg = &state.config;
     let domain = &cfg.server.domain;
     let scheme = if cfg.server.use_tls { "https" } else { "http" };
+    let migrator_ports: std::collections::BTreeSet<u16> =
+        cfg.migrator_nodes.iter().map(|n| n.port).collect();
 
     let health = state.container_health.read().await.clone();
 
@@ -287,11 +289,12 @@ async fn api_nodes(State(state): State<Arc<AppState>>) -> Json<NodesResponse> {
             if !id.chars().all(|ch| ch.is_ascii_digit()) {
                 return None;
             }
+            let migrator = c.port.is_some_and(|p| migrator_ports.contains(&p));
             Some((
                 id.to_string(),
                 NodeInfo {
                     url: format!("{}://{}.{}", scheme, name, domain),
-                    migrator: false,
+                    migrator,
                     healthy: c.up,
                 },
             ))
@@ -386,6 +389,7 @@ mod http_tests {
             prometheus_url: "http://unused".to_string(),
             docker_socket: "/unused".to_string(),
             cutover_env_path: None,
+            migrator_nodes: vec![],
             server: ServerInfo {
                 domain: "xmtp.run".to_string(),
                 region: "test".to_string(),

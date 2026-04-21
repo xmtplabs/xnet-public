@@ -16,7 +16,16 @@ pub struct StatusSection {
     pub docker_socket: String,
     #[serde(default)]
     pub cutover_env_path: Option<PathBuf>,
+    /// xmtpd nodes configured with `migrator = true`, baked in from
+    /// `services.xnet.settings.xmtpd.nodes` at Nix-eval time.
+    #[serde(default)]
+    pub migrator_nodes: Vec<MigratorNode>,
     pub server: ServerInfo,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct MigratorNode {
+    pub port: u16,
 }
 
 #[derive(Debug, Clone, Deserialize)]
